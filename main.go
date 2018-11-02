@@ -105,6 +105,16 @@ func QueryTables() []string{
     return ts
 }
 
+func OpenTable(name string) [][]string {
+
+    sql := fmt.Sprintf("select * from %s limit 10", name)
+    results, err := m.QueryResultArray(sql)
+    if err != nil {
+        panic(err)
+    }
+    return results
+}
+
 func main() {
     fmt.Println("Hello World ")
     InitArgs()
@@ -115,15 +125,10 @@ func main() {
         panic(err)
     }
 
-    t.SetTables(QueryTables())
-    // sql := fmt.Sprintf("select * from action limit 10")
-    // sql := fmt.Sprintf("select count(0) as c from action")
-    // // sql := fmt.Sprintf("select * from %s;", name)
-    // results, err := m.QueryResultArray(sql)
-    // if err != nil {
-        // panic(err)
-    // }
-    // t.SetResults(results)
+    tables := QueryTables()
+    t.SetTables(tables)
+    t.SetResults(OpenTable(tables[1]))
+
 
     for {
         t.OnExecCommands(func (cmds []string) {

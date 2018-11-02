@@ -167,29 +167,38 @@ func (this *Terminal) resetResults() {
     if this.resultsIsError {
         fg = termbox.ColorRed
     }
+
     this.cells[this.height - 1] = cellsReplace(
         this.cells[this.height - 1],
         this.tableSplitSymbolPosition + 2,
         stringToCellsWithColor(this.resultsBottomContent, fg, bg),
     )
+
     if len(this.results) == 0 {
         return
     }
     b := mysqlArrayResultsFormat(this.results)
+
     this.cells[this.resultsSplitSymbolPosition + 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition + 1],
         this.tableSplitSymbolPosition + 1,
         stringToCells(b[0]),
     )
+    this.cells[this.resultsSplitSymbolPosition + 2] = cellsReplace(
+        this.cells[this.resultsSplitSymbolPosition + 2],
+        this.tableSplitSymbolPosition + 1,
+        stringToCells(b[1]),
+    )
+
     for y := 0; y < len(b); y++ {
 
-        index := y + this.resultsShowBegin + 1
+        index := y + this.resultsShowBegin + 2
         if index >= len(b) {
             return
         }
         chs := []rune(b[index])
         for x := 0; x < len(chs); x++ {
-            oy := this.resultsSplitSymbolPosition + y + 2
+            oy := this.resultsSplitSymbolPosition + y + 3
             ox := this.tableSplitSymbolPosition + 1 + x
 
             if oy + 1 < this.height && ox + 1 < this.width{
@@ -353,6 +362,12 @@ func (this *Terminal) listenKeyBorad() {
         case PositionCommands: {
             this.listenCommands()
         }
+        case PositionResults: {
+            this.listenResults()
+        }
+        case PositionTables: {
+            this.listenTables()
+        }
     }
 
     if e.Ch <= 0 {
@@ -362,6 +377,69 @@ func (this *Terminal) listenKeyBorad() {
     switch this.mode {
         case ModeNormal: {
             this.listenModeNormal(e)
+        }
+    }
+
+}
+
+func (this *Terminal) listenModeNormal(e termbox.Event) {
+    switch e.Ch {
+        case 'q':{
+            if ! this.isCursorInCommands() {
+                os.Exit(0)
+            }
+        }
+        case 'o': {
+            if this.isCursorInTables() {
+                t := this.currentTable()
+                cmds := []string{fmt.Sprintf("select * from %s limit 20", t)}
+                this.onExecCommands(cmds)
+                this.moveCursorToResults()
+            }
+        }
+        case 'g': {
+            if this.e.preCh == 'g' {
+                this.moveCursorToFirstLine()
+            }
+        }
+        case 'G': {
+            this.moveCursorToLastLine()
+        }
+    }
+
+}
+
+func (this *Terminal) listenTables() {
+    e := this.e.e
+
+    if e.Ch <= 0 {
+        return
+    }
+
+    switch e.Ch {
+        case 'j':{
+            this.moveCursor(0, 1)
+        }
+        case 'k': {
+            this.moveCursor(0, -1)
+        }
+    }
+
+}
+
+func (this *Terminal) listenResults() {
+    e := this.e.e
+
+    if e.Ch <= 0 {
+        return
+    }
+
+    switch e.Ch {
+        case 'j':{
+            this.moveCursor(0, 2)
+        }
+        case 'k': {
+            this.moveCursor(0, -2)
         }
     }
 
@@ -404,6 +482,9 @@ func (this *Terminal) listenCommands() {
         }
 
         switch this.e.ch {
+            case 'q': {
+                os.Exit(0)
+            }
             case 'd': {
                 if this.e.preCh == 'd' {
                     this.commands[this.cursorY] = fmt.Sprintf("%d ", this.cursorY + 1)
@@ -440,7 +521,6 @@ func (this *Terminal) listenCommands() {
 
         switch e.Key {
             case termbox.KeyBackspace2: {
-                LogFile("back")
                 cmd := this.commands[this.cursorY]
                 x, _ := this.commandsCursor()
                 if x <= 2 {
@@ -496,54 +576,6 @@ func (this *Terminal) commandsPosition() (x, y int) {
 }
 func (this *Terminal) resultsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, this.resultsSplitSymbolPosition + 1
-}
-
-
-func (this *Terminal) listenModeNormal(e termbox.Event) {
-    switch e.Ch {
-        case 'q':{
-            if ! this.isCursorInCommands() {
-                os.Exit(0)
-            }
-        }
-        case 'j':{
-            switch this.position {
-                case PositionResults: {
-                    this.moveCursor(0, 2)
-                }
-                default: {
-                    this.moveCursor(0, 1)
-                }
-            }
-        }
-        case 'k': {
-            switch this.position {
-                case PositionResults: {
-                    this.moveCursor(0, -2)
-                }
-                default: {
-                    this.moveCursor(0, -1)
-                }
-            }
-        }
-        case 'o': {
-            if this.isCursorInTables() {
-                t := this.currentTable()
-                cmds := []string{fmt.Sprintf("select * from %s limit 20", t)}
-                this.onExecCommands(cmds)
-                this.moveCursorToResults()
-            }
-        }
-        case 'g': {
-            if this.e.preCh == 'g' {
-                this.moveCursorToFirstLine()
-            }
-        }
-        case 'G': {
-            this.moveCursorToLastLine()
-        }
-    }
-
 }
 
 func (this *Terminal) moveCursorToFirstLine() {
@@ -695,7 +727,7 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
 
                     this.resultsShowBegin += offsetY
                 }
-                nowY = this.height - 3
+                nowY = this.height - 2
             }
         }
     }
