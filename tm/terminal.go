@@ -656,11 +656,11 @@ func (this *Terminal) moveCursorToLastLine() {
 
             if this.height >= len(this.results) + 1 + this.resultsSplitSymbolPosition + 1 {
                 _, py := this.resultsPosition()
-                this.cursorY = py + len(this.results) - 1
+                this.cursorY = py + len(this.results) * 2 - 2
             } else {
 
-                this.cursorY = this.height - 3
-                this.resultsShowBegin =(len(this.results) - 1) / 2
+                this.cursorY = this.height - 2
+                this.resultsShowBegin =(len(this.results) - 1) / 2 + 2
             }
         }
     }
