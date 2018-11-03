@@ -127,7 +127,8 @@ func main() {
 
     tables := QueryTables()
     t.SetTables(tables)
-    t.SetResults(OpenTable(tables[1]))
+    // t.SetResults(OpenTable(tables[1]))
+    t.SetResults(OpenTable("ad"))
 
 
     for {

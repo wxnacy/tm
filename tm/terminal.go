@@ -56,6 +56,7 @@ type Terminal struct {
     resultsIsError bool
 
     commands []string
+    commandsShowBegin int
     commandsBottomContent string
     commandsMode Mode
 
@@ -90,7 +91,15 @@ func New() (*Terminal, error){
         resultsBottomContent: "",
         resultsIsError: false,
 
-        commands: []string{"1 "},
+        commands: []string{
+            "1 select * from ad",
+            "2 select * from shop",
+            "3 select * from config;",
+            // "4 select * from config;",
+            // "5 select * from config;",
+            // "6 select * from config;",
+        },
+        commandsShowBegin: 0,
         commandsBottomContent: "",
         commandsMode: ModeNormal,
 
@@ -210,14 +219,9 @@ func (this *Terminal) resetResults() {
 }
 
 func (this *Terminal) resetCommands() {
-    for i := 0; i < len(this.commands); i++ {
-        line := []rune(this.commands[i])
-        for j := 0; j < len(line); j++ {
-            this.cells[i][this.tableSplitSymbolPosition + j + 1] = Cell{Ch: line[j]}
-        }
-
-    }
     px, _ := this.resultsPosition()
+    cy := this.commandsMaxCursorY()
+
     this.cells[this.resultsSplitSymbolPosition - 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition - 1],
         px,
@@ -227,6 +231,18 @@ func (this *Terminal) resetCommands() {
             termbox.ColorDefault,
         ),
     )
+
+    for i := 0; i < len(this.commands); i++ {
+        index := i + this.commandsShowBegin
+        if i > cy {
+            return
+        }
+        line := []rune(this.commands[index])
+        for j := 0; j < len(line); j++ {
+            this.cells[i][this.tableSplitSymbolPosition + j + 1] = Cell{Ch: line[j]}
+        }
+
+    }
 }
 
 func (this *Terminal) reset() {
@@ -463,18 +479,18 @@ func (this *Terminal) listenCommands() {
             this.resultsShowBegin = 0
         }
         case termbox.KeyCtrlA: {
-            px, _ := this.commandsPosition()
-            this.cursorX = px + 2
-        }
-        case termbox.KeyCtrlE: {
-            px, _ := this.commandsPosition()
-            this.cursorX = px + len(this.commands[this.cursorY])
+            cx, _ := this.commandsMinCursor()
+            this.cursorX = cx
         }
     }
     if this.commandsMode == ModeNormal {
         switch e.Key {
             case termbox.KeyEsc: {
                 os.Exit(0)
+            }
+            case termbox.KeyCtrlE: {
+                cx, _ := this.commandsMaxCursor()
+                this.cursorX = cx
             }
         }
         if e.Ch <= 0 {
@@ -515,6 +531,23 @@ func (this *Terminal) listenCommands() {
             case 'l': {
                 this.moveCursor(1, 0)
             }
+            case 'j': {
+                this.moveCursor(0, 1)
+            }
+            case 'k': {
+                this.moveCursor(0, -1)
+            }
+            case 'g': {
+                if this.e.preCh == 'g' {
+                    this.cursorY = 0
+                    this.commandsShowBegin = 0
+                }
+            }
+            case 'G': {
+                _, cy := this.commandsMaxCursor()
+                this.cursorY = cy
+                this.commandsShowBegin = this.commandsMaxShowBegin()
+            }
         }
 
     } else {
@@ -545,6 +578,23 @@ func (this *Terminal) listenCommands() {
                 this.commandsMode = ModeNormal
                 this.commandsBottomContent = ""
             }
+            case termbox.KeyEnter: {
+                LogFile("end")
+                px, _ := this.resultsPosition()
+                cmd := this.commands[this.cursorY]
+                this.commands[this.cursorY] = cmd[0:this.cursorX - px]
+                newLine := fmt.Sprintf(
+                    "%d %s", len(this.commands) + 1, 
+                    cmd[this.cursorX - px:],
+                )
+                this.commands = append(this.commands, newLine)
+                this.cursorY++
+                this.cursorX = px + 2
+            }
+            case termbox.KeyCtrlE: {
+                cx, _ := this.commandsMaxCursor()
+                this.cursorX = cx + 1
+            }
         }
 
         if this.e.ch <= 0 {
@@ -573,6 +623,38 @@ func (this *Terminal) commandsCursor() (x, y int) {
 
 func (this *Terminal) commandsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, 0
+}
+func (this *Terminal) commandsMinCursor() (int, int) {
+    return this.tableSplitSymbolPosition + 3, 0
+}
+func (this *Terminal) commandsMaxCursor() (int, int) {
+    cx, _ := this.commandsMinCursor()
+    var x int
+
+    line := this.commands[this.cursorY]
+    if len(line) == 2 {
+        x = cx
+    } else {
+        x = cx + min(this.width - this.tableSplitSymbolPosition, len(line)) - 3
+    }
+    return x, this.commandsMaxCursorY()
+}
+func (this *Terminal) commandsMaxCursorY() (int) {
+    var y int
+
+    if len(this.commands) == 0 {
+        y = 0
+    } else {
+        y = min(this.resultsSplitSymbolPosition - 1, len(this.commands)) - 1
+    }
+    return y
+}
+func (this *Terminal) commandsMaxShowBegin() (int) {
+    _, cy := this.commandsMaxCursor()
+    if len(this.commands) < 1 + cy {
+        return 0
+    }
+    return len(this.commands) - 1 - cy
 }
 func (this *Terminal) resultsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, this.resultsSplitSymbolPosition + 1
@@ -618,8 +700,9 @@ func (this *Terminal) moveCursorToCommands() {
             this.tablesLastCursorY = this.cursorY
         }
     }
-    this.cursorX = this.tableSplitSymbolPosition + 3
-    this.cursorY = 0
+    cx, cy := this.commandsMinCursor()
+    this.cursorX = cx
+    this.cursorY = cy
     this.position = PositionCommands
 }
 
@@ -659,8 +742,8 @@ func (this *Terminal) moveCursorToLastLine() {
                 this.cursorY = py + len(this.results) * 2 - 2
             } else {
 
-                this.cursorY = this.height - 2
-                this.resultsShowBegin =(len(this.results) - 1) / 2 + 2
+                this.cursorY = this.height - 3
+                this.resultsShowBegin = len(this.results) * 2 - (this.height - this.resultsSplitSymbolPosition)
             }
         }
     }
@@ -677,7 +760,7 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
     nowY := this.cursorY
     nowY += offsetY
     if nowY < 0 {
-        return
+        nowY = 0
     }
 
     LogFile(
@@ -709,12 +792,29 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
         }
         case PositionCommands: {
             px, _ := this.commandsPosition()
-            if nowX <= px +1  || nowY >= this.resultsSplitSymbolPosition {
+            mi := px
+            _, cy := this.commandsMaxCursor()
+            if nowX < mi  {
                 return
             }
 
+            if nowY == 0 {
+                if this.commandsShowBegin > 0 && offsetY < 0 {
+                    this.commandsShowBegin += offsetY
+                }
+            }
+
+            if nowY > cy {
+                if this.commandsShowBegin < this.commandsMaxShowBegin() {
+                    this.commandsShowBegin += offsetY
+                }
+                nowY = cy
+            }
+
+
         }
         case PositionResults: {
+            // TODO 移动还有问题
             _, py := this.resultsPosition()
 
             if nowY < py + 2 {
@@ -781,4 +881,18 @@ func (this *Terminal) Close() {
 func LogFile(str ...string) {
     file, _ := os.OpenFile("wsh.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
     file.WriteString(strings.Join(str, " ") + "\n")
+}
+
+func min(x, y int) int {
+    if x <= y {
+        return x
+    }
+    return y
+}
+
+func max(x, y int) int {
+    if x >= y {
+        return x
+    }
+    return y
 }
