@@ -2,6 +2,8 @@ package tm
 
 import (
     "testing"
+    "fmt"
+    "strings"
 )
 
 func TestCellsToString(t *testing.T) {
@@ -111,5 +113,29 @@ func TestDeleteStringByCtrlW(t *testing.T) {
     res = deleteStringByCtrlW(s, -1)
     if res != "select * from  user"{
         t.Error(res + "is error")
+    }
+}
+
+func TestInsertInStringArray(t *testing.T) {
+    var arr = []string{"1", "2"}
+    var newArr = make([]string, 0)
+
+    newArr = insertInStringArray(arr, 0, "0")
+    fmt.Println(newArr)
+    if strings.Join(newArr, "") != "012" {
+        t.Error(newArr, "is error")
+    }
+
+
+    newArr = insertInStringArray(arr, 1, "4")
+    fmt.Println(newArr)
+    if strings.Join(newArr, "") != "142" {
+        t.Error(newArr, "is error")
+    }
+
+    newArr = insertInStringArray(arr, 3, "3")
+    fmt.Println(newArr)
+    if strings.Join(newArr, "") != "123" {
+        t.Error(newArr, "is error")
     }
 }

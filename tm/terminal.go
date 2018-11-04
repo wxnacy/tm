@@ -56,6 +56,7 @@ type Terminal struct {
     resultsIsError bool
 
     commands []string
+    commandsSources []string
     commandsShowBegin int
     commandsBottomContent string
     commandsMode Mode
@@ -78,7 +79,7 @@ func New() (*Terminal, error){
         width: w,
         height: h,
         tableSplitSymbolPosition: 20,
-        resultsSplitSymbolPosition: 5,
+        resultsSplitSymbolPosition: 6,
         e: &Event{},
         mode: ModeNormal,
         position: PositionTables,
@@ -91,14 +92,11 @@ func New() (*Terminal, error){
         resultsBottomContent: "",
         resultsIsError: false,
 
-        commands: []string{
-            "1 select * from ad",
-            "2 select * from shop",
-            "3 select * from config;",
-            // "4 select * from config;",
-            // "5 select * from config;",
-            // "6 select * from config;",
+        commandsSources: []string{
+            "select * from ad",
+            "select * from config",
         },
+        commands: make([]string, 0),
         commandsShowBegin: 0,
         commandsBottomContent: "",
         commandsMode: ModeNormal,
@@ -232,6 +230,14 @@ func (this *Terminal) resetResults() {
 
 }
 
+func (this *Terminal) initCommands() {
+    this.commands = make([]string, 0)
+    for i, d := range this.commandsSources {
+        cmd := fmt.Sprintf("%d %s", i + 1, d)
+        this.commands = append(this.commands, cmd)
+    }
+}
+
 func (this *Terminal) resetCommands() {
     px, _ := this.resultsPosition()
     cy := this.commandsMaxCursorY()
@@ -283,6 +289,7 @@ func (this *Terminal) resetCommands() {
 func (this *Terminal) reset() {
     this.clearCells()
     this.resetTables()
+    this.initCommands()
     this.resetCommands()
     this.resetResults()
     this.resetViewCells()
@@ -538,27 +545,38 @@ func (this *Terminal) listenCommands() {
             }
             case 'd': {
                 if this.e.preCh == 'd' {
-                    this.commands[this.cursorY] = fmt.Sprintf("%d ", this.cursorY + 1)
-                    px, _ := this.resultsPosition()
-                    this.cursorX = px + 2
+                    this.commandsSources[this.cursorY] = ""
+                    minCX, _ := this.commandsMinCursor()
+                    this.cursorX = minCX
                 }
             }
             case 'x': {
 
-                cmd := this.commands[this.cursorY]
+                cmd := this.commandsSources[this.cursorY]
                 x, _ := this.commandsCursor()
-                if x < 2 {
+                if x < 0 {
                     return
                 }
                 cmd = deleteFromString(cmd, x, 1)
                 LogFile(cmd)
-                this.commands[this.cursorY] = cmd
+                this.commandsSources[this.cursorY] = cmd
             }
             case 'i': {
-                if this.isCursorInCommands() {
-                    this.commandsMode = ModeInsert
-                    this.commandsBottomContent = "-- INSERT --"
-                }
+                this.commandsMode = ModeInsert
+                this.commandsBottomContent = "-- INSERT --"
+            }
+            case 'o': {
+                this.commandsMode = ModeInsert
+                this.commandsBottomContent = "-- INSERT --"
+
+                this.commandsSources = insertInStringArray(
+                    this.commandsSources,
+                    this.cursorY + 1,
+                    "",
+                )
+                this.cursorY++
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = minCX
             }
             case 'h': {
                 this.moveCursor(-1, 0)
@@ -589,24 +607,24 @@ func (this *Terminal) listenCommands() {
 
         switch e.Key {
             case termbox.KeyBackspace2: {
-                cmd := this.commands[this.cursorY]
+                cmd := this.commandsSources[this.cursorY]
                 x, _ := this.commandsCursor()
-                if x <= 2 {
+                if x <= 0 {
                     return
                 }
                 cmd = deleteFromString(cmd, x - 1, 1)
                 LogFile(cmd)
-                this.commands[this.cursorY] = cmd
+                this.commandsSources[this.cursorY] = cmd
                 this.cursorX--
             }
             case termbox.KeyCtrlW: {
-                cmd := this.commands[this.cursorY]
-                cmdstr := cmd[2:]
+                cmd := this.commandsSources[this.cursorY]
+                cx, _ := this.commandsCursor()
 
-                newcmd := deleteStringByCtrlW(cmdstr, this.cursorX - this.tableSplitSymbolPosition - 3)
-                this.commands[this.cursorY] = cmd[0:2] + newcmd
-                if len(cmdstr) > len(newcmd) {
-                    this.cursorX -= len(cmdstr) - len(newcmd)
+                newcmd := deleteStringByCtrlW(cmd, cx)
+                this.commandsSources[this.cursorY] = newcmd
+                if len(cmd) > len(newcmd) {
+                    this.cursorX -= len(cmd) - len(newcmd)
                 }
             }
             case termbox.KeyEsc: {
@@ -614,17 +632,25 @@ func (this *Terminal) listenCommands() {
                 this.commandsBottomContent = ""
             }
             case termbox.KeyEnter: {
-                LogFile("end")
-                px, _ := this.resultsPosition()
-                cmd := this.commands[this.cursorY]
-                this.commands[this.cursorY] = cmd[0:this.cursorX - px]
-                newLine := fmt.Sprintf(
-                    "%d %s", len(this.commands) + 1, 
-                    cmd[this.cursorX - px:],
+                cx, _ := this.commandsCursor()
+                minCX, _ := this.commandsMinCursor()
+                _, maxCY := this.commandsMaxCursor()
+                cmd := this.commandsSources[this.cursorY]
+
+                newCmds := splitStringByIndex(cmd, cx)
+                LogFile(newCmds[0], newCmds[1])
+                this.commandsSources[this.cursorY] = newCmds[0]
+                this.commandsSources = insertInStringArray(
+                    this.commandsSources,
+                    this.cursorY + 1, newCmds[1],
                 )
-                this.commands = append(this.commands, newLine)
-                this.cursorY++
-                this.cursorX = px + 2
+                if this.cursorY == maxCY {
+                    this.commandsShowBegin++
+                }
+                if this.cursorY < maxCY {
+                    this.cursorY++
+                }
+                this.cursorX = minCX
             }
             case termbox.KeyCtrlE: {
                 cx, _ := this.commandsMaxCursor()
@@ -640,20 +666,21 @@ func (this *Terminal) listenCommands() {
 }
 
 func (this *Terminal) insertToCommands() {
-    cmd := this.commands[this.cursorY]
+    cmd := this.commandsSources[this.cursorY]
     LogFile("before", cmd)
     x, _ := this.commandsCursor()
     cmd = insertInString(
         cmd, x, string(this.e.ch),
     )
     LogFile(cmd)
-    this.commands[this.cursorY] = cmd
+    this.commandsSources[this.cursorY] = cmd
     this.cursorX +=1
 
 }
 
 func (this *Terminal) commandsCursor() (x, y int) {
-    return this.cursorX - this.tableSplitSymbolPosition - 1, this.cursorY
+    minCX, _ := this.commandsMinCursor()
+    return this.cursorX - minCX, this.cursorY
 }
 
 func (this *Terminal) commandsPosition() (x, y int) {

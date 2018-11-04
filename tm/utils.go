@@ -47,6 +47,27 @@ func insertInString(s string, x int, apd string) string {
     }
 }
 
+func insertInStringArray(arr []string, index int, s string) []string {
+    // 在字符串数组中添加字符串
+    if index == 0 {
+        return append([]string{s}, arr...)
+    } else if index >= len(arr) {
+        return append(arr, s)
+    } else {
+        return append(arr[0:index], append([]string{s}, arr[index:]...)...)
+    }
+}
+
+func splitStringByIndex(s string, index int) []string {
+    if index == 0 {
+        return []string{"", s}
+    } else if index >= len(s) {
+        return []string{s, ""}
+    } else {
+        return []string{s[0:index], s[index:]}
+    }
+}
+
 func deleteFromString(s string, index, length int) string {
     if index + length - 1 >= len(s) || length <= 0{
         return s
