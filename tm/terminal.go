@@ -210,8 +210,22 @@ func (this *Terminal) resetResults() {
             oy := this.resultsSplitSymbolPosition + y + 3
             ox := this.tableSplitSymbolPosition + 1 + x
 
+            rbg := termbox.ColorDefault
+            rfg := termbox.ColorDefault
+
+            if this.isCursorInResults() {
+
+                if oy == this.cursorY {
+                    rbg = termbox.ColorYellow
+                }
+            }
+
             if oy + 1 < this.height && ox + 1 < this.width{
-                this.cells[oy][ox] = Cell{Ch: chs[x]}
+                this.cells[oy][ox] = Cell{
+                    Ch: chs[x],
+                    Fg: rfg,
+                    Bg: rbg,
+                }
             }
         }
     }
@@ -221,6 +235,7 @@ func (this *Terminal) resetResults() {
 func (this *Terminal) resetCommands() {
     px, _ := this.resultsPosition()
     cy := this.commandsMaxCursorY()
+    minCX, _ := this.commandsMinCursor()
 
     this.cells[this.resultsSplitSymbolPosition - 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition - 1],
@@ -239,7 +254,27 @@ func (this *Terminal) resetCommands() {
         }
         line := []rune(this.commands[index])
         for j := 0; j < len(line); j++ {
-            this.cells[i][this.tableSplitSymbolPosition + j + 1] = Cell{Ch: line[j]}
+            cellsX := this.tableSplitSymbolPosition + j + 1
+            fg := termbox.ColorDefault
+            bg := termbox.ColorDefault
+            if cellsX < minCX  {
+                bg = termbox.ColorBlack
+            }
+
+            if this.isCursorInCommands() && i == this.cursorY{
+
+                if cellsX >= minCX{
+                    bg = termbox.ColorBlack
+                } else {
+                    bg = termbox.ColorDefault
+                }
+            }
+
+            this.cells[i][cellsX] = Cell{
+                Ch: line[j],
+                Fg: fg,
+                Bg: bg,
+            }
         }
 
     }
@@ -660,6 +695,14 @@ func (this *Terminal) resultsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, this.resultsSplitSymbolPosition + 1
 }
 
+func (this *Terminal) resultsMinCursor() (int, int) {
+    // results 区域最小的光标坐标位置
+    var x, y int
+    x = this.tableSplitSymbolPosition + 1
+    y = this.resultsSplitSymbolPosition + 3
+    return x, y
+}
+
 func (this *Terminal) moveCursorToFirstLine() {
     switch this.position {
         case PositionTables: {
@@ -682,9 +725,9 @@ func (this *Terminal) moveCursorToResults() {
             this.resultsShowBegin = 0
         }
     }
-    px, py := this.resultsPosition()
-    this.cursorX = px
-    this.cursorY = py + 2
+    minCX, minCY := this.resultsMinCursor()
+    this.cursorX = minCX
+    this.cursorY = minCY
     this.position = PositionResults
 }
 
