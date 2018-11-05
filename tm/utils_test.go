@@ -139,3 +139,20 @@ func TestInsertInStringArray(t *testing.T) {
         t.Error(newArr, "is error")
     }
 }
+
+func TestinitResultsSplitSymbolPosition(t *testing.T) {
+    var p int
+    p = initResultsSplitSymbolPosition(18)
+    if p != 6 {
+        t.Error(p, "is error")
+    }
+
+    p = initResultsSplitSymbolPosition(55)
+    if p != 19 {
+        t.Error(p, "is error")
+    }
+    p = initResultsSplitSymbolPosition(59)
+    if p != 19 {
+        t.Error(p, "is error")
+    }
+}

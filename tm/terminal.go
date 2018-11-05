@@ -23,6 +23,8 @@ const (
 type Event struct {
     preCh rune
     ch rune
+    preKey termbox.Key
+    key termbox.Key
     e termbox.Event
 }
 
@@ -104,8 +106,16 @@ func New() (*Terminal, error){
         cells: make([][]Cell, 0),
         viewCells: make([][]Cell, 0),
     }
+    t.initArgs()
 
     return t, nil
+}
+
+func (this *Terminal) initArgs() {
+    this.resultsSplitSymbolPosition = initResultsSplitSymbolPosition(this.height)
+    LogFile(
+        "result", strconv.Itoa(this.resultsSplitSymbolPosition),
+    )
 }
 
 func (this *Terminal) OnOpenTable(onOpenTable func(name string) ) {
@@ -255,6 +265,7 @@ func (this *Terminal) resetCommands() {
 
     for i := 0; i < len(this.commands); i++ {
         index := i + this.commandsShowBegin
+        LogFile("enter", strconv.Itoa(index), strconv.Itoa(this.commandsShowBegin))
         if i > cy {
             return
         }
@@ -294,6 +305,7 @@ func (this *Terminal) reset() {
     this.resetResults()
     this.resetViewCells()
 }
+
 
 func (this *Terminal) clearCells() {
 
@@ -447,14 +459,6 @@ func (this *Terminal) listenModeNormal(e termbox.Event) {
                 os.Exit(0)
             }
         }
-        case 'o': {
-            if this.isCursorInTables() {
-                t := this.currentTable()
-                cmds := []string{fmt.Sprintf("select * from %s limit 20", t)}
-                this.onExecCommands(cmds)
-                this.moveCursorToResults()
-            }
-        }
         case 'g': {
             if this.e.preCh == 'g' {
                 this.moveCursorToFirstLine()
@@ -462,6 +466,13 @@ func (this *Terminal) listenModeNormal(e termbox.Event) {
         }
         case 'G': {
             this.moveCursorToLastLine()
+        }
+        case 'J': {
+            LogFile("J")
+            this.resultsSplitSymbolPosition += 2
+        }
+        case 'K': {
+            this.resultsSplitSymbolPosition -= 2
         }
     }
 
@@ -480,6 +491,12 @@ func (this *Terminal) listenTables() {
         }
         case 'k': {
             this.moveCursor(0, -1)
+        }
+        case 'o': {
+            t := this.currentTable()
+            cmds := []string{fmt.Sprintf("select * from %s limit 20", t)}
+            this.onExecCommands(cmds)
+            this.moveCursorToResults()
         }
     }
 
@@ -644,10 +661,14 @@ func (this *Terminal) listenCommands() {
                     this.commandsSources,
                     this.cursorY + 1, newCmds[1],
                 )
-                if this.cursorY == maxCY {
+                LogFile(
+                    "keyenter",
+                    strconv.Itoa(maxCY),
+                )
+                if this.cursorY == this.resultsSplitSymbolPosition - 2 {
                     this.commandsShowBegin++
                 }
-                if this.cursorY < maxCY {
+                if this.cursorY < this.resultsSplitSymbolPosition - 2{
                     this.cursorY++
                 }
                 this.cursorX = minCX
@@ -919,12 +940,16 @@ func (t *Terminal) PollEvent() termbox.Event{
                     t.e.ch = e.Ch
                 }
                 t.e.e = e
+
+                t.e.preKey = t.e.key
+                t.e.key = e.Key
                 return e
             case termbox.EventResize:
                 t.width = e.Width
                 t.height = e.Height
                 t.tablesShowBegin = 0
                 t.tablesLastCursorY = 1
+                t.initArgs()
                 t.moveCursorToTables()
                 t.Rendering()
         }

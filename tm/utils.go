@@ -153,3 +153,18 @@ func mysqlArrayResultsFormat(a [][]string) []string {
     }
     return b
 }
+
+func initResultsSplitSymbolPosition(height int) int {
+
+    yu := height % 2
+
+    res := height / 3
+    resYu := res % 2
+
+    if yu == resYu {
+        return res
+    } else {
+        return res + 1
+    }
+
+}
