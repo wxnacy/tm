@@ -154,7 +154,15 @@ func (this *Terminal) resetTables() {
 
     LogFile(strconv.Itoa(this.tablesShowBegin))
     titleCells := stringToCells(tables[0])
-    this.cells[0] = cellsReplace(this.cells[0], 0, titleCells)
+    maxTableLength := this.tableSplitSymbolPosition - 1
+    titleEnd := len(titleCells)
+    if len(titleCells) > maxTableLength {
+        titleEnd = maxTableLength
+    }
+    this.cells[0] = cellsReplace(
+        this.cells[0], 0,
+        titleCells[0:titleEnd],
+    )
 
     for y := 1; y < len(tables); y++ {
         prefix := ""
@@ -267,7 +275,7 @@ func (this *Terminal) resetCommands() {
 
     for i := 0; i < len(this.commands); i++ {
         index := i + this.commandsShowBegin
-        LogFile("enter", strconv.Itoa(index), strconv.Itoa(this.commandsShowBegin))
+        // LogFile("enter", strconv.Itoa(index), strconv.Itoa(this.commandsShowBegin))
         if i > cy {
             return
         }
@@ -470,11 +478,16 @@ func (this *Terminal) listenModeNormal(e termbox.Event) {
             this.moveCursorToLastLine()
         }
         case 'J': {
-            LogFile("J")
             this.resultsSplitSymbolPosition += 2
         }
         case 'K': {
             this.resultsSplitSymbolPosition -= 2
+        }
+        case 'H': {
+            this.tableSplitSymbolPosition--
+        }
+        case 'L': {
+            this.tableSplitSymbolPosition++
         }
     }
 
