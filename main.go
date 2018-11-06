@@ -142,7 +142,7 @@ func main() {
 
     for {
         t.OnExecCommands(func (cmds []string) {
-            time.Sleep(1 * time.Second)
+            // time.Sleep(1 * time.Second)
             begin := time.Now()
             sql := fmt.Sprintf(cmds[0])
             results, err := m.QueryResultArray(sql)
@@ -163,6 +163,7 @@ func main() {
 
         })
         t.Rendering()
+        t.ListenKeyBorad()
     }
 
     defer m.Close()

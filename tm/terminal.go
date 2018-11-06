@@ -400,10 +400,9 @@ func (this *Terminal) Rendering() {
     }
     termbox.SetCursor(this.cursorX, this.cursorY)
     termbox.Flush()
-    this.listenKeyBorad()
 }
 
-func (this *Terminal) listenKeyBorad() {
+func (this *Terminal) ListenKeyBorad() {
 
     e := this.PollEvent()
     switch e.Key {
@@ -833,6 +832,14 @@ func (this *Terminal) resultsMinCursor() (int, int) {
     return x, y
 }
 
+func (this *Terminal) resultsMaxCursor() (int, int) {
+    // results 区域最大的光标坐标位置
+    // var x, y int
+    // x = this.tableSplitSymbolPosition + 1
+    // y = this.resultsSplitSymbolPosition + 3
+    return this.width - 1, this.height - 3
+}
+
 func (this *Terminal) moveCursorToFirstLine() {
     switch this.position {
         case PositionTables: {
@@ -987,20 +994,20 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
 
         }
         case PositionResults: {
-            // TODO 移动还有问题
             _, py := this.resultsPosition()
+            _, maxCY := this.resultsMaxCursor()
 
             if nowY < py + 2 {
                 if offsetY < 0 && this.resultsShowBegin > 0 {
                     this.resultsShowBegin += offsetY
                 }
                 return
-            } else if nowY > this.height - 3 {
+            } else if nowY > maxCY {
                 if this.resultsShowBegin < len(this.results) + this.resultsSplitSymbolPosition + 3 - this.height {
 
                     this.resultsShowBegin += offsetY
                 }
-                nowY = this.height - 2
+                nowY = maxCY
             }
         }
     }
