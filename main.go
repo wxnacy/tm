@@ -138,33 +138,32 @@ func main() {
     t.SetTables(tables)
     // t.SetResults(OpenTable(tables[1]))
     t.SetResults(OpenTable("ad"))
+    t.OnExecCommands(func (cmds []string) {
+        // time.Sleep(1 * time.Second)
+        begin := time.Now()
+        sql := fmt.Sprintf(cmds[0])
+        results, err := m.QueryResultArray(sql)
+        end := time.Now()
 
+        dur := end.Sub(begin).Nanoseconds()
+        if err != nil {
+            t.SetResultsBottomContent(err.Error())
+            t.SetResultsIsError(true)
+            t.ClearResults()
+        } else {
+            t.SetResults(results)
+            t.SetResultsIsError(false)
+            c := fmt.Sprintf("No Erros; taking %d ms", dur/10000)
+            t.SetResultsBottomContent(c)
+        }
+
+    })
 
     for {
-        t.OnExecCommands(func (cmds []string) {
-            // time.Sleep(1 * time.Second)
-            begin := time.Now()
-            sql := fmt.Sprintf(cmds[0])
-            results, err := m.QueryResultArray(sql)
-            end := time.Now()
-
-            dur := end.Sub(begin).Nanoseconds()
-            if err != nil {
-                t.SetResultsBottomContent(err.Error())
-                t.SetResultsIsError(true)
-                r := make([][]string, 0)
-                t.SetResults(r)
-            } else {
-                t.SetResults(results)
-                t.SetResultsIsError(false)
-                c := fmt.Sprintf("No Erros; taking %d ms", dur/10000)
-                t.SetResultsBottomContent(c)
-            }
-
-        })
-        t.Rendering()
-        t.ListenKeyBorad()
-        t.Rendering()
+        if t.IsListenKeyBorad() {
+            t.Rendering()
+            t.ListenKeyBorad()
+        }
     }
 
     defer m.Close()

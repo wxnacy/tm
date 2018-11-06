@@ -46,6 +46,7 @@ type Terminal struct {
     e *Event
     position Position
     mode Mode
+    isListenKeyBorad bool
 
     tables []string
     tablesShowBegin int
@@ -87,6 +88,8 @@ func New() (*Terminal, error){
         mode: ModeNormal,
         position: PositionTables,
         cursorY: 1,
+        isListenKeyBorad: true,
+
         tables: make([]string, 0),
         tablesShowBegin: 0,
         tablesLastCursorY: 1,
@@ -128,8 +131,18 @@ func (this *Terminal) OnExecCommands(onExecCommands func(cmds []string)) {
     this.onExecCommands = onExecCommands
 }
 
+func (this *Terminal) IsListenKeyBorad() bool {
+    return this.isListenKeyBorad
+}
+
 func (this *Terminal) SetTables(tables []string) {
     this.tables = tables
+}
+
+func (this *Terminal) ClearResults() {
+    r := make([][]string, 0)
+    this.SetResults(r)
+
 }
 
 func (this *Terminal) SetResults(results [][]string) {
@@ -527,10 +540,17 @@ func (this *Terminal) listenTables() {
             this.moveCursor(0, -1)
         }
         case 'o': {
+            this.isListenKeyBorad = false
+            this.ClearResults()
+            this.SetResultsBottomContent("Waiting")
+            this.Rendering()
+
             t := this.currentTable()
             cmds := []string{fmt.Sprintf("select * from %s limit 20", t)}
             this.onExecCommands(cmds)
             this.moveCursorToResults()
+            this.isListenKeyBorad = true
+
         }
     }
 
