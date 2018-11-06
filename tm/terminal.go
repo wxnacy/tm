@@ -478,15 +478,27 @@ func (this *Terminal) listenModeNormal(e termbox.Event) {
             this.moveCursorToLastLine()
         }
         case 'J': {
+            if this.resultsSplitSymbolPosition >= this.height - 6{
+                return
+            }
             this.resultsSplitSymbolPosition += 2
         }
         case 'K': {
+            if this.resultsSplitSymbolPosition <= 2 {
+                return
+            }
             this.resultsSplitSymbolPosition -= 2
         }
         case 'H': {
+            if this.tableSplitSymbolPosition <= 3 {
+                return
+            }
             this.tableSplitSymbolPosition--
         }
         case 'L': {
+            if this.tableSplitSymbolPosition >= this.width / 2 {
+                return
+            }
             this.tableSplitSymbolPosition++
         }
     }
