@@ -231,6 +231,14 @@ func (this *Terminal) resetResults() {
             rbg := termbox.ColorDefault
             rfg := termbox.ColorDefault
 
+            yu := 1
+            if this.height % 2 == 1 {
+                yu = 0
+            }
+            if oy % 4 == yu {
+                rbg = termbox.ColorBlack
+            }
+
             if this.isCursorInResults() {
 
                 if oy == this.cursorY {
@@ -837,7 +845,11 @@ func (this *Terminal) resultsMaxCursor() (int, int) {
     // var x, y int
     // x = this.tableSplitSymbolPosition + 1
     // y = this.resultsSplitSymbolPosition + 3
-    return this.width - 1, this.height - 3
+    y := min(
+        this.height - 3,
+        this.resultsSplitSymbolPosition + len(this.results) * 2 - 1,
+    )
+    return this.width - 1, y
 }
 
 func (this *Terminal) moveCursorToFirstLine() {
@@ -917,12 +929,13 @@ func (this *Terminal) moveCursorToLastLine() {
         }
         case PositionResults: {
 
+            _, maxCY := this.resultsMaxCursor()
+
             if this.height >= len(this.results) + 1 + this.resultsSplitSymbolPosition + 1 {
-                _, py := this.resultsPosition()
-                this.cursorY = py + len(this.results) * 2 - 2
+                this.cursorY = maxCY
             } else {
 
-                this.cursorY = this.height - 3
+                this.cursorY = maxCY
                 this.resultsShowBegin = len(this.results) * 2 - (this.height - this.resultsSplitSymbolPosition)
             }
         }
