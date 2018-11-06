@@ -164,6 +164,7 @@ func main() {
         })
         t.Rendering()
         t.ListenKeyBorad()
+        t.Rendering()
     }
 
     defer m.Close()
