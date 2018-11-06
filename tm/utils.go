@@ -75,6 +75,16 @@ func deleteFromString(s string, index, length int) string {
     return s[0:index] + s[index + length:]
 }
 
+func deleteFromStringArray(arr []string, index, length int) []string {
+    if index == 0 {
+        return arr[index + length:]
+    } else if index >= len(arr) {
+        return arr
+    } else {
+        return append(arr[0:index] , arr[index + length:]...)
+    }
+}
+
 func deleteStringByCtrlW(s string, index int) string {
     if index > len(s) || index <= 0{
         return s

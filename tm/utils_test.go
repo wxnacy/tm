@@ -156,3 +156,35 @@ func TestinitResultsSplitSymbolPosition(t *testing.T) {
         t.Error(p, "is error")
     }
 }
+
+func TestDeleteFromStringArray(t *testing.T) {
+    var arr1 = []string{
+        "0",
+        "1",
+        "2",
+        "3",
+    }
+
+    var newArr []string
+
+    newArr = deleteFromStringArray(arr1, 0, 1)
+    if strings.Join(newArr, "") != "123" {
+        t.Error(newArr, "is error")
+    }
+
+    newArr = deleteFromStringArray(arr1, 1, 2)
+    if strings.Join(newArr, "") != "03" {
+        t.Error(newArr, "is error")
+    }
+    arr1 = []string{
+        "0",
+        "1",
+        "2",
+        "3",
+    }
+    newArr = deleteFromStringArray(arr1, 4, 2)
+    if strings.Join(newArr, "") != "0123" {
+        t.Error(newArr, "is error")
+    }
+
+}

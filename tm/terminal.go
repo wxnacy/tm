@@ -62,6 +62,7 @@ type Terminal struct {
     commandsShowBegin int
     commandsBottomContent string
     commandsMode Mode
+    commandsClipboard []string
 
     cells [][]Cell
     viewCells [][]Cell
@@ -102,6 +103,7 @@ func New() (*Terminal, error){
         commandsShowBegin: 0,
         commandsBottomContent: "",
         commandsMode: ModeNormal,
+        commandsClipboard: make([]string, 0),
 
         cells: make([][]Cell, 0),
         viewCells: make([][]Cell, 0),
@@ -562,9 +564,17 @@ func (this *Terminal) listenCommands() {
             }
             case 'd': {
                 if this.e.preCh == 'd' {
-                    this.commandsSources[this.cursorY] = ""
-                    minCX, _ := this.commandsMinCursor()
-                    this.cursorX = minCX
+                    if len(this.commandsSources) == 1 {
+                        this.commandsSources = []string{""}
+                        return
+                    }
+                    this.commandsSources = deleteFromStringArray(
+                        this.commandsSources,
+                        this.cursorY, 1,
+                    )
+
+                    cy := min(len(this.commandsSources) - 1, this.cursorY)
+                    this.cursorY = cy
                 }
             }
             case 'x': {
@@ -617,6 +627,25 @@ func (this *Terminal) listenCommands() {
                 _, cy := this.commandsMaxCursor()
                 this.cursorY = cy
                 this.commandsShowBegin = this.commandsMaxShowBegin()
+            }
+            case 'y': {
+                if this.e.preCh == 'y' {
+                    cmd := this.commandsSources[this.cursorY]
+                    this.commandsClipboard = append(
+                        []string{cmd}, this.commandsClipboard...,
+                    )
+                }
+            }
+            case 'p': {
+                if len(this.commandsClipboard) == 0 {
+                    return
+                }
+                this.commandsSources = insertInStringArray(
+                    this.commandsSources,
+                    this.cursorY + 1,
+                    this.commandsClipboard[0],
+                )
+                this.cursorY++
             }
         }
 

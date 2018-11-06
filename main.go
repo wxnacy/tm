@@ -10,7 +10,7 @@ import (
 )
 
 const (
-    version string = "0.0.4"
+    version string = "0.0.5"
 )
 
 var m *tm.Mysql
@@ -22,7 +22,7 @@ var passwd string
 var host string
 var port string
 var db string
-var creDir = os.Getenv("HOME") + "/.tm/credentials" 
+var creDir = os.Getenv("HOME") + "/.tm/credentials"
 
 var v bool
 
