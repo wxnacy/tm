@@ -564,8 +564,10 @@ func (this *Terminal) listenCommands() {
             }
             case 'd': {
                 if this.e.preCh == 'd' {
+                    minCX, _ := this.commandsMinCursor()
                     if len(this.commandsSources) == 1 {
                         this.commandsSources = []string{""}
+                        this.cursorX = minCX
                         return
                     }
                     this.commandsSources = deleteFromStringArray(
@@ -575,6 +577,8 @@ func (this *Terminal) listenCommands() {
 
                     cy := min(len(this.commandsSources) - 1, this.cursorY)
                     this.cursorY = cy
+                    this.cursorX = minCX
+                    this.e.ch = 0
                 }
             }
             case 'x': {
@@ -646,6 +650,30 @@ func (this *Terminal) listenCommands() {
                     this.commandsClipboard[0],
                 )
                 this.cursorY++
+            }
+            case 'w': {
+                nowX, _ := this.commandsCursor()
+                cx := stringNextWordBegin(
+                    this.commandsSources[this.cursorY], nowX,
+                )
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = cx + minCX
+            }
+            case 'e': {
+                nowX, _ := this.commandsCursor()
+                cx := stringNextWordEnd(
+                    this.commandsSources[this.cursorY], nowX,
+                )
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = cx + minCX
+            }
+            case 'b': {
+                nowX, _ := this.commandsCursor()
+                cx := stringPreWordBegin(
+                    this.commandsSources[this.cursorY], nowX,
+                )
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = cx + minCX
             }
         }
 

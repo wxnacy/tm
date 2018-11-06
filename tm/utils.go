@@ -85,6 +85,63 @@ func deleteFromStringArray(arr []string, index, length int) []string {
     }
 }
 
+func stringNextWordBegin(s string, index int) int {
+    if index >= len(s) {
+        return index
+    }
+    splits := strings.Split(s[index:], " ")
+    if len(splits) <= 1 {
+        return index
+    }
+    return strings.Index(s, splits[1])
+}
+
+func stringNextWordEnd(s string, index int) int {
+    if index >= len(s) {
+        return index
+    }
+    splits := strings.Split(s[index:], " ")
+    if len(splits) == 0 {
+        return index
+    }
+
+    end := splits[0]
+    if len(end) <= 1 {
+        if len(splits) > 1 {
+            end = splits[1]
+        } else {
+            return index
+        }
+    } else {
+        return index + len(end) - 1
+    }
+
+    if len(end) < 1 {
+        return index
+    }
+
+    return strings.Index(s[index:], end) + len(end) + index - 1
+}
+
+func stringPreWordBegin(s string, index int) int {
+    if index == 0 || index >= len(s) {
+        return index
+    }
+
+    splits := strings.Split(s[0:index], " ")
+
+    if len(splits) == 1 {
+        return 0
+    }
+
+    indexStr := splits[len(splits) - 1]
+    if indexStr == "" {
+        indexStr = splits[len(splits) - 2]
+    }
+
+    return strings.LastIndex(s[0:index], indexStr)
+}
+
 func deleteStringByCtrlW(s string, index int) string {
     if index > len(s) || index <= 0{
         return s
@@ -178,3 +235,4 @@ func initResultsSplitSymbolPosition(height int) int {
     }
 
 }
+

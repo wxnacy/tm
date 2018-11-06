@@ -188,3 +188,117 @@ func TestDeleteFromStringArray(t *testing.T) {
     }
 
 }
+
+func TestStringNextWordBegin(t *testing.T) {
+    var s string
+    var i int
+    s = "select * from user"
+    i = stringNextWordBegin(s, 0)
+    if i != 7 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordBegin(s, 3)
+    if i != 7 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordBegin(s, 7)
+    if i != 9 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordBegin(s, 15)
+    if i != 15 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordBegin(s, 25)
+    if i != 25 {
+        t.Error(i, "is error")
+    }
+}
+
+func TestStringNextWordEnd(t *testing.T) {
+    var s string
+    var i int
+    s = "select * from user"
+    i = stringNextWordEnd(s, 0)
+    if i != 5 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordEnd(s, 3)
+    if i != 5 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordEnd(s, 7)
+    if i != 12 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordEnd(s, 8)
+    if i != 12 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordEnd(s, 11)
+    if i != 12 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordEnd(s, 15)
+    if i != 17 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringNextWordEnd(s, 25)
+    if i != 25 {
+        t.Error(i, "is error")
+    }
+}
+func TestStringPreWordBegin(t *testing.T) {
+    var s string
+    var i int
+    s = "select * from user"
+    i = stringPreWordBegin(s, 0)
+    if i != 0 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 3)
+    if i != 0 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 7)
+    if i != 0 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 8)
+    if i != 7 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 6)
+    if i != 0 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 10)
+    if i != 9 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 15)
+    if i != 14 {
+        t.Error(i, "is error")
+    }
+    s = "from * from user"
+    i = stringPreWordBegin(s, 13)
+    if i != 12 {
+        t.Error(i, "is error")
+    }
+}
