@@ -9,6 +9,10 @@ import (
     "strings"
 )
 
+const (
+    version string = "0.0.3"
+)
+
 var m *tm.Mysql
 var err error
 var args []string
@@ -20,11 +24,13 @@ var port string
 var db string
 var creDir = os.Getenv("HOME") + "/.tm/credentials" 
 
+var v bool
+
 
 func InitArgs() {
+    flag.BoolVar(&v, "v", false, "")
     flag.Parse()
     args = flag.Args()
-    fmt.Println(args)
     conf = ""
     user = "root"
     host = "localhost"
@@ -116,8 +122,11 @@ func OpenTable(name string) [][]string {
 }
 
 func main() {
-    fmt.Println("Hello World ")
     InitArgs()
+    if v {
+        fmt.Println(version)
+        return
+    }
     InitMysql()
 
     t, err := tm.New()

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-TAG_NAME=$1
-PUSH_MSG=${@/$1/}
-# TAG_NAME=`wcrypto -v`
-# PUSH_MSG=${@}
+# TAG_NAME=$1
+# PUSH_MSG=${@/$1/}
+TAG_NAME=`tm -v`
+PUSH_MSG=${@}
 
 
 main(){
