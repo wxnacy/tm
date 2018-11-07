@@ -322,11 +322,16 @@ func (this *Terminal) resetCommands() {
                 }
             }
 
-            this.cells[i][cellsX] = Cell{
-                Ch: line[j],
-                Fg: fg,
-                Bg: bg,
+            // Log.Info(len(this.cells), i, len(this.cells[i]), cellsX)
+            if cellsX < len(this.cells[i]) {
+                this.cells[i][cellsX] = Cell{
+                    Ch: line[j],
+                    Fg: fg,
+                    Bg: bg,
+                }
             }
+
+
         }
 
     }
@@ -1051,12 +1056,16 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
     this.cursorX = nowX
     this.cursorY = nowY
 
-
 }
 
 func (t *Terminal) PollEvent() termbox.Event{
     for {
-        switch e := termbox.PollEvent(); e.Type {
+        e := termbox.PollEvent()
+        Log.Infof(
+            "e.Type %v e.Key %v e.Ch %v",
+            e.Type, e.Key, e.Ch,
+        )
+        switch e.Type {
             case termbox.EventKey:
                 t.e.preCh = t.e.ch
                 if e.Key == termbox.KeySpace {

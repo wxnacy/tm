@@ -87,11 +87,13 @@ func (this *Mysql) QueryResultArray(
 ) ([][]string, error){
     rows, err := this.db.Query(query, args...)
     if err != nil {
+        Log.Error(err)
         return nil, err
     }
 
     columns, err := rows.Columns()
     if err != nil {
+        Log.Error(err)
         return nil, err
     }
     values := make([][]byte, len(columns))
