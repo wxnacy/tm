@@ -278,8 +278,13 @@ func (this *Terminal) resetResults() {
 
 func (this *Terminal) initCommands() {
     this.commands = make([]string, 0)
+
+    lineNumWidth := this.commandsLineNumWidth()
+
+    prefix := fmt.Sprintf("%%%dd", lineNumWidth - 1)
+
     for i, d := range this.commandsSources {
-        cmd := fmt.Sprintf("%d %s", i + 1, d)
+        cmd := fmt.Sprintf(prefix + " %s", i + 1, d)
         this.commands = append(this.commands, cmd)
     }
 }
@@ -322,7 +327,6 @@ func (this *Terminal) resetCommands() {
                 }
             }
 
-            // Log.Info(len(this.cells), i, len(this.cells[i]), cellsX)
             if cellsX < len(this.cells[i]) {
                 this.cells[i][cellsX] = Cell{
                     Ch: line[j],
@@ -825,18 +829,32 @@ func (this *Terminal) commandsCursor() (x, y int) {
 func (this *Terminal) commandsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, 0
 }
+func (this *Terminal) commandsLineNumWidth() (int) {
+
+    numLength := 1
+    cmdsLength := len(this.commandsSources)
+    if cmdsLength >= 10 && cmdsLength < 100 {
+        numLength = 2
+    }
+    if cmdsLength >= 100 && cmdsLength < 1000 {
+        numLength = 3
+    }
+
+    return numLength + 1
+}
+
 func (this *Terminal) commandsMinCursor() (int, int) {
-    return this.tableSplitSymbolPosition + 3, 0
+    return this.tableSplitSymbolPosition + 1 + this.commandsLineNumWidth(), 0
 }
 func (this *Terminal) commandsMaxCursor() (int, int) {
     cx, _ := this.commandsMinCursor()
     var x int
 
-    line := this.commands[this.cursorY]
-    if len(line) == 2 {
+    line := this.commandsSources[this.cursorY]
+    if len(line) == 0 {
         x = cx
     } else {
-        x = cx + min(this.width - this.tableSplitSymbolPosition, len(line)) - 3
+        x = cx + min(this.width - this.tableSplitSymbolPosition, len(line)) - 1
     }
     return x, this.commandsMaxCursorY()
 }
