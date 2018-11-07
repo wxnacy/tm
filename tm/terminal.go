@@ -309,6 +309,9 @@ func (this *Terminal) resetCommands() {
         if i > cy {
             return
         }
+        if index >= len(this.commands) {
+            return
+        }
         line := []rune(this.commands[index])
         for j := 0; j < len(line); j++ {
             cellsX := this.tableSplitSymbolPosition + j + 1
@@ -354,12 +357,16 @@ func (this *Terminal) reset() {
 func (this *Terminal) resetCursor() {
     switch this.position {
         case PositionCommands: {
-            maxCX, _ := this.commandsMaxCursor()
+            maxCX, maxCY := this.commandsMaxCursor()
             if this.cursorX > maxCX {
                 this.cursorX = maxCX
             }
+            if this.cursorY > maxCY {
+                this.cursorY = maxCY
+            }
         }
     }
+
 }
 
 
@@ -658,8 +665,14 @@ func (this *Terminal) listenCommands() {
                         this.cursorY, 1,
                     )
 
-                    cy := min(len(this.commandsSources) - 1, this.cursorY)
-                    this.cursorY = cy
+                    Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
+                    if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
+                        if this.commandsShowBegin > 0 {
+                            this.commandsShowBegin--
+                        } else {
+                            this.cursorY--
+                        }
+                    }
                     this.cursorX = minCX
                     this.e.ch = 0
                 }
