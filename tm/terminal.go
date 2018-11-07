@@ -1032,7 +1032,7 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
         case PositionCommands: {
             px, _ := this.commandsPosition()
             mi := px
-            _, cy := this.commandsMaxCursor()
+            maxCX, maxCY := this.commandsMaxCursor()
             if nowX < mi  {
                 return
             }
@@ -1043,11 +1043,15 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
                 }
             }
 
-            if nowY > cy {
+            if nowY > maxCY {
                 if this.commandsShowBegin < this.commandsMaxShowBegin() {
                     this.commandsShowBegin += offsetY
                 }
-                nowY = cy
+                nowY = maxCY
+            }
+
+            if nowX > maxCX {
+                nowX = maxCX
             }
 
 
