@@ -65,6 +65,7 @@ type Terminal struct {
     commandsBottomContent string
     commandsMode Mode
     commandsClipboard []string
+    commandsWidth, commandsHeight int
 
     cells [][]Cell
     viewCells [][]Cell
@@ -345,6 +346,9 @@ func (this *Terminal) resetCommands() {
 }
 
 func (this *Terminal) reset() {
+    this.commandsWidth = this.width - this.tableSplitSymbolPosition - 1
+    this.commandsHeight = this.height - this.resultsSplitSymbolPosition - 1
+
     this.clearCells()
     this.resetTables()
     this.initCommands()
@@ -633,15 +637,15 @@ func (this *Terminal) listenCommands() {
             cx, _ := this.commandsMinCursor()
             this.cursorX = cx
         }
+        case termbox.KeyCtrlE: {
+            cx, _ := this.commandsMaxCursor()
+            this.cursorX = cx
+        }
     }
     if this.commandsMode == ModeNormal {
         switch e.Key {
             case termbox.KeyEsc: {
                 os.Exit(0)
-            }
-            case termbox.KeyCtrlE: {
-                cx, _ := this.commandsMaxCursor()
-                this.cursorX = cx
             }
         }
         if e.Ch <= 0 {
@@ -819,10 +823,6 @@ func (this *Terminal) listenCommands() {
                 }
                 this.cursorX = minCX
             }
-            case termbox.KeyCtrlE: {
-                cx, _ := this.commandsMaxCursor()
-                this.cursorX = cx + 1
-            }
         }
 
         if this.e.ch <= 0 {
@@ -879,7 +879,11 @@ func (this *Terminal) commandsMaxCursor() (int, int) {
     if len(line) == 0 {
         x = cx
     } else {
-        x = cx + min(this.width - this.tableSplitSymbolPosition, len(line)) - 1
+        lineNumWidth := this.commandsLineNumWidth()
+        x = cx + min(this.commandsWidth - lineNumWidth, len(line)) - 1
+        if this.commandsMode == ModeInsert {
+            x++
+        }
     }
     return x, this.commandsMaxCursorY()
 }
