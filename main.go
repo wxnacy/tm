@@ -7,11 +7,10 @@ import (
     "flag"
     "os"
     "strings"
-    "log"
 )
 
 const (
-    version string = "0.1.0"
+    version string = "0.1.1"
 )
 
 var m *tm.Mysql
@@ -124,7 +123,6 @@ func OpenTable(name string) [][]string {
 }
 
 func main() {
-    log.Println("main")
     InitArgs()
     if v {
         fmt.Println(version)
