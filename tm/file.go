@@ -5,7 +5,18 @@ import (
     "strings"
     "io/ioutil"
     "errors"
+    "fmt"
+    "log"
 )
+
+var TM_DIR = os.Getenv("HOME") + "/.tm"
+var LOG_DIR = TM_DIR + "/logs"
+var CMD_DIR = TM_DIR + "/commands"
+
+func cmdPath(name string) string {
+    return fmt.Sprintf("%s/%s", CMD_DIR, name)
+}
+
 
 func Exists(path string) bool {
 	_, err := os.Stat(path)    //os.Stat获取文件信息
@@ -29,7 +40,7 @@ func IsDir(path string) bool {
 
 // 判断所给路径是否为文件
 func IsFile(path string) bool {
-	return !IsDir(path)
+	return Exists(path) && !IsDir(path)
 }
 
 func SaveFile(path, content string) error{
@@ -46,7 +57,7 @@ func SaveFile(path, content string) error{
         return err
     }
     f.WriteString(content)
-    f.Close()
+    defer f.Close()
 
     return nil
 }
@@ -61,3 +72,25 @@ func ReadFile(path string) ( string, error) {
     }
     return "", errors.New(path + "is not exists")
 }
+
+func LogFile(str ...string) {
+    path := LOG_DIR + "/tm.log"
+    if !IsDir(LOG_DIR) {
+        err := os.MkdirAll(LOG_DIR, os.ModePerm)
+        checkErr(err)
+    }
+    file, _ := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+    file.WriteString(strings.Join(str, " ") + "\n")
+}
+
+func InitLogger() {
+
+    path := LOG_DIR + "/tm.log"
+    if !IsDir(LOG_DIR) {
+        err := os.MkdirAll(LOG_DIR, os.ModePerm)
+        checkErr(err)
+    }
+    file, _ := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+    log.SetOutput(file)
+}
+

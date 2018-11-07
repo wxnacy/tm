@@ -7,10 +7,11 @@ import (
     "flag"
     "os"
     "strings"
+    "log"
 )
 
 const (
-    version string = "0.0.6"
+    version string = "0.1.0"
 )
 
 var m *tm.Mysql
@@ -78,6 +79,7 @@ func InitMysql() {
             InitMysqlConfig()
             SaveMysqlConfig()
         } else {
+            conf = action
             confData, err := tm.ReadFile(creDir + "/" + action)
             checkErr(err)
             urls := strings.Split(confData, " ")
@@ -122,6 +124,7 @@ func OpenTable(name string) [][]string {
 }
 
 func main() {
+    log.Println("main")
     InitArgs()
     if v {
         fmt.Println(version)
@@ -129,15 +132,17 @@ func main() {
     }
     InitMysql()
 
-    t, err := tm.New()
+    t, err := tm.New(conf)
     if err != nil {
         panic(err)
     }
 
     tables := QueryTables()
     t.SetTables(tables)
-    // t.SetResults(OpenTable(tables[1]))
-    t.SetResults(OpenTable("ad"))
+    if len(tables) >= 2 {
+        t.SetResults(OpenTable(tables[1]))
+    }
+    // t.SetResults(OpenTable("ad"))
     t.OnExecCommands(func (cmds []string) {
         // time.Sleep(1 * time.Second)
         begin := time.Now()
@@ -160,10 +165,10 @@ func main() {
     })
 
     for {
-        if t.IsListenKeyBorad() {
-            t.Rendering()
-            t.ListenKeyBorad()
-        }
+        // if t.IsListenKeyBorad() {
+        t.Rendering()
+        t.ListenKeyBorad()
+        // }
     }
 
     defer m.Close()

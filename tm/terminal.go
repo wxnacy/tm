@@ -5,9 +5,9 @@ import (
     "os"
     "github.com/mattn/go-runewidth"
     "strings"
-    "strconv"
     "fmt"
 )
+
 
 type Mode uint8
 type Position uint8
@@ -39,6 +39,7 @@ func (c *Cell) Width() int {
 }
 
 type Terminal struct {
+    name string
     width, height    int
     cursorX, cursorY int
     tableSplitSymbolPosition int
@@ -71,7 +72,7 @@ type Terminal struct {
     onExecCommands func(cmds []string)
 }
 
-func New() (*Terminal, error){
+func New(name string) (*Terminal, error){
     err := termbox.Init()
     if err != nil {
         return nil, err
@@ -80,6 +81,7 @@ func New() (*Terminal, error){
     w, h := termbox.Size()
 
     t := &Terminal{
+        name: name,
         width: w,
         height: h,
         tableSplitSymbolPosition: 20,
@@ -118,9 +120,13 @@ func New() (*Terminal, error){
 
 func (this *Terminal) initArgs() {
     this.resultsSplitSymbolPosition = initResultsSplitSymbolPosition(this.height)
-    LogFile(
-        "result", strconv.Itoa(this.resultsSplitSymbolPosition),
-    )
+
+    cmd_file := cmdPath(this.name)
+    if IsFile(cmd_file) {
+        data, err := ReadFile(cmd_file)
+        checkErr(err)
+        this.commandsSources = strings.Split(data, "\n")
+    }
 }
 
 func (this *Terminal) OnOpenTable(onOpenTable func(name string) ) {
@@ -165,7 +171,6 @@ func (this *Terminal) resetTables() {
         return
     }
 
-    LogFile(strconv.Itoa(this.tablesShowBegin))
     titleCells := stringToCells(tables[0])
     maxTableLength := this.tableSplitSymbolPosition - 1
     titleEnd := len(titleCells)
@@ -296,7 +301,6 @@ func (this *Terminal) resetCommands() {
 
     for i := 0; i < len(this.commands); i++ {
         index := i + this.commandsShowBegin
-        // LogFile("enter", strconv.Itoa(index), strconv.Itoa(this.commandsShowBegin))
         if i > cy {
             return
         }
@@ -585,11 +589,17 @@ func (this *Terminal) listenCommands() {
             this.moveCursor(1, 0)
         }
         case termbox.KeyCtrlR: {
+            this.commandsSave()
+            this.isListenKeyBorad = false
+            this.ClearResults()
+            this.SetResultsBottomContent("Waiting")
+            this.Rendering()
+
             cmd := this.commands[this.cursorY]
-            LogFile(cmd[2:])
 
             this.onExecCommands([]string{cmd[2:]})
             this.resultsShowBegin = 0
+            this.isListenKeyBorad = true
         }
         case termbox.KeyCtrlA: {
             cx, _ := this.commandsMinCursor()
@@ -641,7 +651,6 @@ func (this *Terminal) listenCommands() {
                     return
                 }
                 cmd = deleteFromString(cmd, x, 1)
-                LogFile(cmd)
                 this.commandsSources[this.cursorY] = cmd
             }
             case 'i': {
@@ -739,7 +748,6 @@ func (this *Terminal) listenCommands() {
                     return
                 }
                 cmd = deleteFromString(cmd, x - 1, 1)
-                LogFile(cmd)
                 this.commandsSources[this.cursorY] = cmd
                 this.cursorX--
             }
@@ -760,19 +768,14 @@ func (this *Terminal) listenCommands() {
             case termbox.KeyEnter: {
                 cx, _ := this.commandsCursor()
                 minCX, _ := this.commandsMinCursor()
-                _, maxCY := this.commandsMaxCursor()
+                // _, maxCY := this.commandsMaxCursor()
                 cmd := this.commandsSources[this.cursorY]
 
                 newCmds := splitStringByIndex(cmd, cx)
-                LogFile(newCmds[0], newCmds[1])
                 this.commandsSources[this.cursorY] = newCmds[0]
                 this.commandsSources = insertInStringArray(
                     this.commandsSources,
                     this.cursorY + 1, newCmds[1],
-                )
-                LogFile(
-                    "keyenter",
-                    strconv.Itoa(maxCY),
                 )
                 if this.cursorY == this.resultsSplitSymbolPosition - 2 {
                     this.commandsShowBegin++
@@ -797,17 +800,18 @@ func (this *Terminal) listenCommands() {
 
 func (this *Terminal) insertToCommands() {
     cmd := this.commandsSources[this.cursorY]
-    LogFile("before", cmd)
     x, _ := this.commandsCursor()
     cmd = insertInString(
         cmd, x, string(this.e.ch),
     )
-    LogFile(cmd)
     this.commandsSources[this.cursorY] = cmd
     this.cursorX +=1
 
 }
 
+func (this *Terminal) commandsSave() {
+    SaveFile(cmdPath(this.name), strings.Join(this.commandsSources, "\n"))
+}
 func (this *Terminal) commandsCursor() (x, y int) {
     minCX, _ := this.commandsMinCursor()
     return this.cursorX - minCX, this.cursorY
@@ -919,7 +923,6 @@ func (this *Terminal) moveCursorToCommands() {
 }
 
 func (this *Terminal) isCursorInTables() bool {
-    LogFile(strconv.Itoa(this.cursorX), strconv.Itoa(this.cursorY))
     return this.cursorX < this.tableSplitSymbolPosition && this.cursorY > 0
 }
 
@@ -932,7 +935,6 @@ func (this *Terminal) isCursorInCommands() bool {
 }
 func (this *Terminal) currentTable() string{
     currentTable := this.tables[this.cursorY + this.tablesShowBegin]
-    LogFile("table name ", currentTable)
     return currentTable
 }
 
@@ -976,9 +978,10 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
         nowY = 0
     }
 
-    LogFile(
-        "nowx", strconv.Itoa(nowX), "nowy", strconv.Itoa(nowY),
-        "width", strconv.Itoa(this.width), "height", strconv.Itoa(this.height),
+
+    Log.Infof(
+        "nowx %d nowy %d width %d height %d",
+        nowX, nowY, this.width, this.height,
     )
 
 
@@ -1080,7 +1083,6 @@ func (t *Terminal) PollEvent() termbox.Event{
 
 func (this *Terminal) resetViewCells() {
 
-
     for i := 0; i < len(this.cells); i++ {
         viewLine := make([]Cell, 0)
         line := this.cells[i]
@@ -1095,21 +1097,4 @@ func (this *Terminal) resetViewCells() {
 func (this *Terminal) Close() {
     termbox.Close()
 }
-func LogFile(str ...string) {
-    file, _ := os.OpenFile("wsh.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-    file.WriteString(strings.Join(str, " ") + "\n")
-}
 
-func min(x, y int) int {
-    if x <= y {
-        return x
-    }
-    return y
-}
-
-func max(x, y int) int {
-    if x >= y {
-        return x
-    }
-    return y
-}
