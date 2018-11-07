@@ -348,6 +348,18 @@ func (this *Terminal) reset() {
     this.resetCommands()
     this.resetResults()
     this.resetViewCells()
+    this.resetCursor()
+}
+
+func (this *Terminal) resetCursor() {
+    switch this.position {
+        case PositionCommands: {
+            maxCX, _ := this.commandsMaxCursor()
+            if this.cursorX > maxCX {
+                this.cursorX = maxCX
+            }
+        }
+    }
 }
 
 
