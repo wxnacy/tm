@@ -10,7 +10,7 @@ import (
 )
 
 const (
-    version string = "0.1.4"
+    version string = "0.1.5"
 )
 
 var m *tm.Mysql
@@ -146,9 +146,9 @@ func main() {
         begin := time.Now()
         sql := fmt.Sprintf(cmds[0])
         results, err := m.QueryResultArray(sql)
-        end := time.Now()
+        // end := time.Now()
 
-        dur := end.Sub(begin).Nanoseconds()
+        // dur := end.Sub(begin).Nanoseconds()
         if err != nil {
             t.SetResultsBottomContent(err.Error())
             t.SetResultsIsError(true)
@@ -157,9 +157,9 @@ func main() {
             t.SetResults(results)
             t.SetResultsIsError(false)
             c := fmt.Sprintf(
-                "No Erros; %d rows affected, taking %d ms",
+                "No Erros; %d rows affected, taking %v",
                 len(results) - 1,
-                dur/10000,
+                time.Since(begin),
             )
             t.SetResultsBottomContent(c)
         }

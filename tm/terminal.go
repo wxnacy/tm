@@ -250,8 +250,9 @@ func (this *Terminal) resetResults() {
         stringToCells(b[1]),
     )
 
+    _, resultsHeight := this.resultsSize()
     begin := time.Now()
-    for y := 0; y < len(b); y++ {
+    for y := 0; y < resultsHeight; y++ {
 
         index := y + this.resultsShowBegin + 2
         if index >= len(b) {
@@ -275,12 +276,10 @@ func (this *Terminal) resetResults() {
             }
 
             if this.isCursorInResults() {
-
                 if oy == this.cursorY {
                     rbg = termbox.ColorYellow
                 }
             }
-
 
             if oy + 1 < this.height && ox + 1 < this.width{
                 this.cells[oy][ox] = Cell{
@@ -473,6 +472,7 @@ func (this *Terminal) AppendCellFromString(s string) {
 
 func (this *Terminal) Rendering() {
     this.reset()
+    begin := time.Now()
     termbox.Clear(termbox.ColorWhite, termbox.ColorDefault)
 
     for y, yd := range this.cells {
@@ -489,6 +489,7 @@ func (this *Terminal) Rendering() {
     }
     termbox.SetCursor(this.cursorX, this.cursorY)
     termbox.Flush()
+    Log.Infof("Rendering time: %v", time.Since(begin))
 }
 
 func (this *Terminal) ListenKeyBorad() {
@@ -1062,6 +1063,11 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
         return 0
     }
     return len(this.commands) - 1 - cy
+}
+func (this *Terminal) resultsSize() (int, int) {
+    x := this.width - this.tableSplitSymbolPosition - 2
+    y := this.height - this.resultsSplitSymbolPosition - 2
+    return x, y
 }
 func (this *Terminal) resultsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, this.resultsSplitSymbolPosition + 1
