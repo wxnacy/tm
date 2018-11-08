@@ -15,6 +15,7 @@ type Position uint8
 const (
     ModeInsert Mode = iota
     ModeNormal
+    ModeCommand
     PositionTables Position = iota
     PositionCommands
     PositionResults
@@ -41,6 +42,7 @@ func (c *Cell) Width() int {
 type Terminal struct {
     name string
     width, height    int
+    lastCursorX, lastCursorY int
     cursorX, cursorY int
     tableSplitSymbolPosition int
     resultsSplitSymbolPosition int
@@ -346,9 +348,8 @@ func (this *Terminal) resetCommands() {
 }
 
 func (this *Terminal) reset() {
-    this.commandsWidth = this.width - this.tableSplitSymbolPosition - 1
-    this.commandsHeight = this.height - this.resultsSplitSymbolPosition - 1
 
+    this.resetField()
     this.clearCells()
     this.resetTables()
     this.initCommands()
@@ -358,9 +359,18 @@ func (this *Terminal) reset() {
     this.resetCursor()
 }
 
+func (this *Terminal) resetField() {
+
+    this.commandsWidth = this.width - this.tableSplitSymbolPosition - 1
+    this.commandsHeight = this.resultsSplitSymbolPosition - 1
+}
+
 func (this *Terminal) resetCursor() {
     switch this.position {
         case PositionCommands: {
+            if this.commandsMode == ModeCommand {
+                return
+            }
             maxCX, maxCY := this.commandsMaxCursor()
             if this.cursorX > maxCX {
                 this.cursorX = maxCX
@@ -642,193 +652,264 @@ func (this *Terminal) listenCommands() {
             this.cursorX = cx
         }
     }
-    if this.commandsMode == ModeNormal {
-        switch e.Key {
-            case termbox.KeyEsc: {
-                os.Exit(0)
-            }
-        }
-        if e.Ch <= 0 {
-            return
-        }
 
-        switch this.e.ch {
-            case 'q': {
-                os.Exit(0)
-            }
-            case 'd': {
-                if this.e.preCh == 'd' {
-                    minCX, _ := this.commandsMinCursor()
-                    if len(this.commandsSources) == 1 {
-                        this.commandsSources = []string{""}
-                        this.cursorX = minCX
+    switch this.commandsMode {
+        case ModeNormal: {
+            this.listenCommandsNormal()
+        }
+        case ModeInsert: {
+            this.listenCommandsInsert()
+        }
+        case ModeCommand: {
+            switch e.Key {
+                case termbox.KeyBackspace2: {
+                    // cmd := this.commandsSources[this.cursorY]
+                    x, _ := this.commandsCursor()
+                    if x + this.commandsLineNumWidth() - 1 <= 0 {
                         return
                     }
-                    this.commandsSources = deleteFromStringArray(
-                        this.commandsSources,
-                        this.cursorY, 1,
-                    )
+                    // cmd = deleteFromString(cmd, x - 1, 1)
+                    // this.commandsSources[this.cursorY] = cmd
 
-                    Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
-                    if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
-                        if this.commandsShowBegin > 0 {
-                            this.commandsShowBegin--
-                        } else {
-                            this.cursorY--
-                        }
+                    this.commandsBottomContent = deleteFromString(
+                        this.commandsBottomContent, 
+                        this.cursorX - this.tableSplitSymbolPosition - 2,
+                        1,
+                    )
+                    this.cursorX--
+                }
+                case termbox.KeyEsc: {
+                    this.commandsMode = ModeNormal
+                    this.commandsBottomContent = ""
+                }
+                case termbox.KeyEnter: {
+                    if this.commandsBottomContent == ":w" {
+                        this.commandsSave()
+                        this.commandsBottomContent = fmt.Sprintf(
+                            "\"%s\" %dL written",
+                            cmdPath(this.name), this.commandsLength(),
+                        )
+                    } else {
+                        this.commandsBottomContent = ""
                     }
+                    this.commandsMode = ModeNormal
+                    this.cursorX = this.lastCursorX
+                    this.cursorY = this.lastCursorY
+                }
+            }
+
+            if e.Ch <= 0 {
+                return
+            }
+
+            this.commandsBottomContent = insertInString(
+                this.commandsBottomContent,
+                this.cursorX - this.tableSplitSymbolPosition,
+                string(e.Ch),
+            )
+            this.cursorX++
+
+        }
+    }
+}
+func (this *Terminal) listenCommandsInsert() {
+
+    e := this.e.e
+    switch e.Key {
+        case termbox.KeyBackspace2: {
+            cmd := this.commandsSources[this.cursorY]
+            x, _ := this.commandsCursor()
+            if x <= 0 {
+                return
+            }
+            cmd = deleteFromString(cmd, x - 1, 1)
+            this.commandsSources[this.cursorY] = cmd
+            this.cursorX--
+        }
+        case termbox.KeyCtrlW: {
+            cmd := this.commandsSources[this.cursorY]
+            cx, _ := this.commandsCursor()
+
+            newcmd := deleteStringByCtrlW(cmd, cx)
+            this.commandsSources[this.cursorY] = newcmd
+            if len(cmd) > len(newcmd) {
+                this.cursorX -= len(cmd) - len(newcmd)
+            }
+        }
+        case termbox.KeyEsc: {
+            this.commandsMode = ModeNormal
+            this.commandsBottomContent = ""
+        }
+        case termbox.KeyEnter: {
+            cx, _ := this.commandsCursor()
+            minCX, _ := this.commandsMinCursor()
+            // _, maxCY := this.commandsMaxCursor()
+            cmd := this.commandsSources[this.cursorY]
+
+            newCmds := splitStringByIndex(cmd, cx)
+            this.commandsSources[this.cursorY] = newCmds[0]
+            this.commandsSources = insertInStringArray(
+                this.commandsSources,
+                this.cursorY + 1, newCmds[1],
+            )
+            if this.cursorY == this.resultsSplitSymbolPosition - 2 {
+                this.commandsShowBegin++
+            }
+            if this.cursorY < this.resultsSplitSymbolPosition - 2{
+                this.cursorY++
+            }
+            this.cursorX = minCX
+        }
+    }
+
+    if this.e.ch <= 0 {
+        return
+    }
+    this.insertToCommands()
+}
+func (this *Terminal) listenCommandsNormal() {
+    e := this.e.e
+
+    switch e.Key {
+        case termbox.KeyEsc: {
+            os.Exit(0)
+        }
+    }
+    if e.Ch <= 0 {
+        return
+    }
+
+    switch this.e.ch {
+        case 'q': {
+            os.Exit(0)
+        }
+        case 'd': {
+            if this.e.preCh == 'd' {
+                minCX, _ := this.commandsMinCursor()
+                if len(this.commandsSources) == 1 {
+                    this.commandsSources = []string{""}
                     this.cursorX = minCX
-                    this.e.ch = 0
-                }
-            }
-            case 'x': {
-
-                cmd := this.commandsSources[this.cursorY]
-                x, _ := this.commandsCursor()
-                if x < 0 {
                     return
                 }
-                cmd = deleteFromString(cmd, x, 1)
-                this.commandsSources[this.cursorY] = cmd
-            }
-            case 'i': {
-                this.commandsMode = ModeInsert
-                this.commandsBottomContent = "-- INSERT --"
-            }
-            case 'o': {
-                this.commandsMode = ModeInsert
-                this.commandsBottomContent = "-- INSERT --"
-
-                this.commandsSources = insertInStringArray(
+                this.commandsSources = deleteFromStringArray(
                     this.commandsSources,
-                    this.cursorY + 1,
-                    "",
+                    this.cursorY, 1,
                 )
-                this.cursorY++
-                minCX, _ := this.commandsMinCursor()
-                this.cursorX = minCX
-            }
-            case 'h': {
-                this.moveCursor(-1, 0)
-            }
-            case 'l': {
-                this.moveCursor(1, 0)
-            }
-            case 'j': {
-                this.moveCursor(0, 1)
-            }
-            case 'k': {
-                this.moveCursor(0, -1)
-            }
-            case 'g': {
-                if this.e.preCh == 'g' {
-                    this.cursorY = 0
-                    this.commandsShowBegin = 0
-                }
-            }
-            case 'G': {
-                _, cy := this.commandsMaxCursor()
-                this.cursorY = cy
-                this.commandsShowBegin = this.commandsMaxShowBegin()
-            }
-            case 'y': {
-                if this.e.preCh == 'y' {
-                    cmd := this.commandsSources[this.cursorY]
-                    this.commandsClipboard = append(
-                        []string{cmd}, this.commandsClipboard...,
-                    )
-                }
-            }
-            case 'p': {
-                if len(this.commandsClipboard) == 0 {
-                    return
-                }
-                this.commandsSources = insertInStringArray(
-                    this.commandsSources,
-                    this.cursorY + 1,
-                    this.commandsClipboard[0],
-                )
-                this.cursorY++
-            }
-            case 'w': {
-                nowX, _ := this.commandsCursor()
-                cx := stringNextWordBegin(
-                    this.commandsSources[this.cursorY], nowX,
-                )
-                minCX, _ := this.commandsMinCursor()
-                this.cursorX = cx + minCX
-            }
-            case 'e': {
-                nowX, _ := this.commandsCursor()
-                cx := stringNextWordEnd(
-                    this.commandsSources[this.cursorY], nowX,
-                )
-                minCX, _ := this.commandsMinCursor()
-                this.cursorX = cx + minCX
-            }
-            case 'b': {
-                nowX, _ := this.commandsCursor()
-                cx := stringPreWordBegin(
-                    this.commandsSources[this.cursorY], nowX,
-                )
-                minCX, _ := this.commandsMinCursor()
-                this.cursorX = cx + minCX
-            }
-        }
 
-    } else {
-
-        switch e.Key {
-            case termbox.KeyBackspace2: {
-                cmd := this.commandsSources[this.cursorY]
-                x, _ := this.commandsCursor()
-                if x <= 0 {
-                    return
-                }
-                cmd = deleteFromString(cmd, x - 1, 1)
-                this.commandsSources[this.cursorY] = cmd
-                this.cursorX--
-            }
-            case termbox.KeyCtrlW: {
-                cmd := this.commandsSources[this.cursorY]
-                cx, _ := this.commandsCursor()
-
-                newcmd := deleteStringByCtrlW(cmd, cx)
-                this.commandsSources[this.cursorY] = newcmd
-                if len(cmd) > len(newcmd) {
-                    this.cursorX -= len(cmd) - len(newcmd)
-                }
-            }
-            case termbox.KeyEsc: {
-                this.commandsMode = ModeNormal
-                this.commandsBottomContent = ""
-            }
-            case termbox.KeyEnter: {
-                cx, _ := this.commandsCursor()
-                minCX, _ := this.commandsMinCursor()
-                // _, maxCY := this.commandsMaxCursor()
-                cmd := this.commandsSources[this.cursorY]
-
-                newCmds := splitStringByIndex(cmd, cx)
-                this.commandsSources[this.cursorY] = newCmds[0]
-                this.commandsSources = insertInStringArray(
-                    this.commandsSources,
-                    this.cursorY + 1, newCmds[1],
-                )
-                if this.cursorY == this.resultsSplitSymbolPosition - 2 {
-                    this.commandsShowBegin++
-                }
-                if this.cursorY < this.resultsSplitSymbolPosition - 2{
-                    this.cursorY++
+                Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
+                if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
+                    if this.commandsShowBegin > 0 {
+                        this.commandsShowBegin--
+                    } else {
+                        this.cursorY--
+                    }
                 }
                 this.cursorX = minCX
+                this.e.ch = 0
             }
         }
+        case 'x': {
 
-        if this.e.ch <= 0 {
-            return
+            cmd := this.commandsSources[this.cursorY]
+            x, _ := this.commandsCursor()
+            if x < 0 {
+                return
+            }
+            cmd = deleteFromString(cmd, x, 1)
+            this.commandsSources[this.cursorY] = cmd
         }
-        this.insertToCommands()
+        case 'i': {
+            this.commandsMode = ModeInsert
+            this.commandsBottomContent = "-- INSERT --"
+        }
+        case 'o': {
+            this.commandsMode = ModeInsert
+            this.commandsBottomContent = "-- INSERT --"
+
+            this.commandsSources = insertInStringArray(
+                this.commandsSources,
+                this.cursorY + 1,
+                "",
+            )
+            this.cursorY++
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = minCX
+        }
+        case ':': {
+            this.lastCursorX = this.cursorX
+            this.lastCursorY = this.cursorY
+            this.commandsMode = ModeCommand
+            this.commandsBottomContent = ":"
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = minCX - 2
+            this.cursorY = this.commandsHeight
+        }
+        case 'h': {
+            this.moveCursor(-1, 0)
+        }
+        case 'l': {
+            this.moveCursor(1, 0)
+        }
+        case 'j': {
+            this.moveCursor(0, 1)
+        }
+        case 'k': {
+            this.moveCursor(0, -1)
+        }
+        case 'g': {
+            if this.e.preCh == 'g' {
+                this.cursorY = 0
+                this.commandsShowBegin = 0
+            }
+        }
+        case 'G': {
+            _, cy := this.commandsMaxCursor()
+            this.cursorY = cy
+            this.commandsShowBegin = this.commandsMaxShowBegin()
+        }
+        case 'y': {
+            if this.e.preCh == 'y' {
+                cmd := this.commandsSources[this.cursorY]
+                this.commandsClipboard = append(
+                    []string{cmd}, this.commandsClipboard...,
+                )
+            }
+        }
+        case 'p': {
+            if len(this.commandsClipboard) == 0 {
+                return
+            }
+            this.commandsSources = insertInStringArray(
+                this.commandsSources,
+                this.cursorY + 1,
+                this.commandsClipboard[0],
+            )
+            this.cursorY++
+        }
+        case 'w': {
+            nowX, _ := this.commandsCursor()
+            cx := stringNextWordBegin(
+                this.commandsSources[this.cursorY], nowX,
+            )
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = cx + minCX
+        }
+        case 'e': {
+            nowX, _ := this.commandsCursor()
+            cx := stringNextWordEnd(
+                this.commandsSources[this.cursorY], nowX,
+            )
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = cx + minCX
+        }
+        case 'b': {
+            nowX, _ := this.commandsCursor()
+            cx := stringPreWordBegin(
+                this.commandsSources[this.cursorY], nowX,
+            )
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = cx + minCX
+        }
     }
 }
 
@@ -893,9 +974,13 @@ func (this *Terminal) commandsMaxCursorY() (int) {
     if len(this.commands) == 0 {
         y = 0
     } else {
-        y = min(this.resultsSplitSymbolPosition - 1, len(this.commands)) - 1
+        y = min(this.commandsHeight, len(this.commands)) - 1
     }
     return y
+}
+
+func (this *Terminal) commandsLength() (int) {
+    return len(this.commandsSources)
 }
 func (this *Terminal) commandsMaxShowBegin() (int) {
     _, cy := this.commandsMaxCursor()
