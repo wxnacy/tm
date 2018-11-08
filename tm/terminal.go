@@ -717,13 +717,14 @@ func (this *Terminal) listenCommandsInsert() {
     e := this.e.e
     switch e.Key {
         case termbox.KeyBackspace2: {
-            cmd := this.commandsSources[this.cursorY]
+            currentLineNum := this.commandsSourceCurrentLineNum()
+            cmd := this.commandsSources[currentLineNum]
             x, _ := this.commandsCursor()
             if x <= 0 {
                 return
             }
             cmd = deleteFromString(cmd, x - 1, 1)
-            this.commandsSources[this.cursorY] = cmd
+            this.commandsSources[currentLineNum] = cmd
             this.cursorX--
         }
         case termbox.KeyCtrlW: {
@@ -828,10 +829,14 @@ func (this *Terminal) listenCommandsNormal() {
 
             this.commandsSources = insertInStringArray(
                 this.commandsSources,
-                this.cursorY + 1,
+                this.cursorY + 1 + this.commandsShowBegin,
                 "",
             )
-            this.cursorY++
+            if this.cursorY == this.commandsHeight - 1 {
+                this.commandsShowBegin++
+            } else {
+                this.cursorY++
+            }
             minCX, _ := this.commandsMinCursor()
             this.cursorX = minCX
         }
@@ -914,14 +919,23 @@ func (this *Terminal) listenCommandsNormal() {
 }
 
 func (this *Terminal) insertToCommands() {
-    cmd := this.commandsSources[this.cursorY]
+    currentLineNum := this.commandsSourceCurrentLineNum()
+    cmd := this.commandsSources[currentLineNum]
     x, _ := this.commandsCursor()
     cmd = insertInString(
         cmd, x, string(this.e.ch),
     )
-    this.commandsSources[this.cursorY] = cmd
+    this.commandsSources[currentLineNum] = cmd
     this.cursorX +=1
 
+}
+
+func (this *Terminal) commandsSourceCurrentLine() string {
+    return this.commandsSources[this.commandsSourceCurrentLineNum()]
+}
+
+func (this *Terminal) commandsSourceCurrentLineNum() int {
+    return this.cursorY + this.commandsShowBegin
 }
 
 func (this *Terminal) commandsSave() {
