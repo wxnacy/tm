@@ -372,11 +372,15 @@ func (this *Terminal) resetCursor() {
                 return
             }
             maxCX, maxCY := this.commandsMaxCursor()
+            minCX, _ := this.commandsMinCursor()
             if this.cursorX > maxCX {
                 this.cursorX = maxCX
             }
             if this.cursorY > maxCY {
                 this.cursorY = maxCY
+            }
+            if this.cursorX < minCX {
+                this.cursorX = minCX
             }
         }
     }
@@ -473,11 +477,11 @@ func (this *Terminal) ListenKeyBorad() {
 
     e := this.PollEvent()
     switch e.Key {
-        case termbox.KeyEsc: {
-            if ! this.isCursorInCommands() {
-                os.Exit(0)
-            }
-        }
+        // case termbox.KeyEsc: {
+            // if ! this.isCursorInCommands() {
+                // os.Exit(0)
+            // }
+        // }
         case termbox.KeyCtrlH: {
             if this.isCursorInResults() || this.isCursorInCommands(){
                 this.moveCursorToTables()
@@ -753,10 +757,10 @@ func (this *Terminal) listenCommandsInsert() {
                 this.commandsSources,
                 this.cursorY + 1, newCmds[1],
             )
-            if this.cursorY == this.resultsSplitSymbolPosition - 2 {
+            if this.cursorY == this.commandsHeight - 1 {
                 this.commandsShowBegin++
             }
-            if this.cursorY < this.resultsSplitSymbolPosition - 2{
+            if this.cursorY < this.commandsHeight - 1 {
                 this.cursorY++
             }
             this.cursorX = minCX
@@ -771,11 +775,11 @@ func (this *Terminal) listenCommandsInsert() {
 func (this *Terminal) listenCommandsNormal() {
     e := this.e.e
 
-    switch e.Key {
-        case termbox.KeyEsc: {
-            os.Exit(0)
-        }
-    }
+    // switch e.Key {
+        // case termbox.KeyEsc: {
+            // os.Exit(0)
+        // }
+    // }
     if e.Ch <= 0 {
         return
     }
@@ -786,26 +790,7 @@ func (this *Terminal) listenCommandsNormal() {
         }
         case 'd': {
             if this.e.preCh == 'd' {
-                minCX, _ := this.commandsMinCursor()
-                if len(this.commandsSources) == 1 {
-                    this.commandsSources = []string{""}
-                    this.cursorX = minCX
-                    return
-                }
-                this.commandsSources = deleteFromStringArray(
-                    this.commandsSources,
-                    this.cursorY, 1,
-                )
-
-                Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
-                if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
-                    if this.commandsShowBegin > 0 {
-                        this.commandsShowBegin--
-                    } else {
-                        this.cursorY--
-                    }
-                }
-                this.cursorX = minCX
+                this.commandsDeleteCurrentLine()
                 this.e.ch = 0
             }
         }
@@ -930,6 +915,29 @@ func (this *Terminal) insertToCommands() {
 
 }
 
+func (this *Terminal) commandsDeleteCurrentLine() {
+
+    minCX, _ := this.commandsMinCursor()
+    if len(this.commandsSources) == 1 {
+        this.commandsSources = []string{""}
+        this.cursorX = minCX
+        return
+    }
+    this.commandsSources = deleteFromStringArray(
+        this.commandsSources,
+        this.cursorY, 1,
+    )
+
+    Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
+    if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
+        if this.commandsShowBegin > 0 {
+            this.commandsShowBegin--
+        } else {
+            this.cursorY--
+        }
+    }
+    this.cursorX = minCX
+}
 func (this *Terminal) commandsSourceCurrentLine() string {
     return this.commandsSources[this.commandsSourceCurrentLineNum()]
 }
