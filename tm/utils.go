@@ -3,6 +3,7 @@ package tm
 import (
     "strings"
     "github.com/nsf/termbox-go"
+    "time"
 )
 
 func cellsToString(cells []Cell) string {
@@ -177,7 +178,7 @@ func deleteStringByCtrlW(s string, index int) string {
 
 
 func mysqlArrayResultsFormat(a [][]string) []string {
-
+    begin := time.Now()
     widths := make([]int, 0)
     for i := 0; i < len(a); i++ {
         line := a[i]
@@ -221,6 +222,7 @@ func mysqlArrayResultsFormat(a [][]string) []string {
         b = append(b, newLine)
         b = append(b, strings.Repeat("-", len(newLine)))
     }
+    Log.Info("mysql result parse time: ", time.Since(begin))
     return b
 }
 

@@ -6,6 +6,7 @@ import (
     "github.com/mattn/go-runewidth"
     "strings"
     "fmt"
+    "time"
 )
 
 
@@ -210,6 +211,7 @@ func (this *Terminal) resetTables() {
 }
 
 func (this *Terminal) resetResults() {
+    begin := time.Now()
     // reset bottom
     fg := termbox.ColorCyan
     bg := termbox.ColorDefault
@@ -243,6 +245,7 @@ func (this *Terminal) resetResults() {
 
         index := y + this.resultsShowBegin + 2
         if index >= len(b) {
+            Log.Info("reset result time: ", time.Since(begin))
             return
         }
         chs := []rune(b[index])
@@ -277,6 +280,8 @@ func (this *Terminal) resetResults() {
             }
         }
     }
+
+    Log.Info("reset result time: ", time.Since(begin))
 
 }
 
@@ -658,9 +663,11 @@ func (this *Terminal) listenCommands() {
             this.SetResultsBottomContent("Waiting")
             this.Rendering()
 
-            cmd := this.commands[this.cursorY]
+            // cmd := this.commands[this.cursorY]
 
-            this.onExecCommands([]string{cmd[2:]})
+            this.onExecCommands([]string{
+                this.commandsSourceCurrentLine(),
+            })
             this.resultsShowBegin = 0
             this.isListenKeyBorad = true
         }

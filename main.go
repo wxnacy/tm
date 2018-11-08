@@ -156,7 +156,11 @@ func main() {
         } else {
             t.SetResults(results)
             t.SetResultsIsError(false)
-            c := fmt.Sprintf("No Erros; taking %d ms", dur/10000)
+            c := fmt.Sprintf(
+                "No Erros; %d rows affected, taking %d ms",
+                len(results) - 1,
+                dur/10000,
+            )
             t.SetResultsBottomContent(c)
         }
 
