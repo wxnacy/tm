@@ -68,6 +68,7 @@ type Terminal struct {
     commandsMode Mode
     commandsClipboard []string
     commandsWidth, commandsHeight int
+    commandsLastCursorX, commandsLastCursorY int
 
     cells [][]Cell
     viewCells [][]Cell
@@ -676,7 +677,7 @@ func (this *Terminal) listenCommands() {
                     // this.commandsSources[this.cursorY] = cmd
 
                     this.commandsBottomContent = deleteFromString(
-                        this.commandsBottomContent, 
+                        this.commandsBottomContent,
                         this.cursorX - this.tableSplitSymbolPosition - 2,
                         1,
                     )
@@ -1075,6 +1076,11 @@ func (this *Terminal) moveCursorToResults() {
             this.resultsShowBegin = 0
         }
     }
+    if this.position == PositionCommands {
+        this.commandsLastCursorX = this.cursorX
+        this.commandsLastCursorY = this.cursorY
+    }
+
     minCX, minCY := this.resultsMinCursor()
     this.cursorX = minCX
     this.cursorY = minCY
@@ -1082,6 +1088,10 @@ func (this *Terminal) moveCursorToResults() {
 }
 
 func (this *Terminal) moveCursorToTables() {
+    if this.position == PositionCommands {
+        this.commandsLastCursorX = this.cursorX
+        this.commandsLastCursorY = this.cursorY
+    }
     this.cursorX = 0
     this.cursorY = this.tablesLastCursorY
     this.position = PositionTables
@@ -1093,9 +1103,8 @@ func (this *Terminal) moveCursorToCommands() {
             this.tablesLastCursorY = this.cursorY
         }
     }
-    cx, cy := this.commandsMinCursor()
-    this.cursorX = cx
-    this.cursorY = cy
+    this.cursorX = this.commandsLastCursorX
+    this.cursorY = this.commandsLastCursorY
     this.position = PositionCommands
 }
 
