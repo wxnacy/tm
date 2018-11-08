@@ -97,7 +97,8 @@ func TestDeleteStringByCtrlW(t *testing.T) {
     }
 
     res = deleteStringByCtrlW(s, 16)
-    if res != "select * fromser"{
+
+    if res != "select * from  ser"{
         t.Error(res + "is error")
     }
 

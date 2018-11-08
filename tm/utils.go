@@ -147,29 +147,32 @@ func deleteStringByCtrlW(s string, index int) string {
         return s
     }
 
-    prefix := s[0:index]
+    preIndex := stringPreWordBegin(s, index)
+    return s[0:preIndex] + s[index:]
 
-    prefixs := strings.Split(prefix, " ")
-    // fmt.Println(prefixs)
+    // prefix := s[0:index]
 
-    if len(prefixs) == 1 {
-        return s[index:]
-    }
+    // prefixs := strings.Split(prefix, " ")
+    // // fmt.Println(prefixs)
 
-    begin := len(prefixs) - 2
-    for i := len(prefixs) - 2; i >= 0; i-- {
-        if prefixs[i] != ""{
-            begin = i
-            break
-        }
-    }
+    // if len(prefixs) == 1 {
+        // return s[index:]
+    // }
 
-    prefix_index := begin + 1
-    if prefixs[len(prefixs) - 1] == "" {
-        prefix_index = begin
-    }
+    // begin := len(prefixs) - 2
+    // for i := len(prefixs) - 2; i >= 0; i-- {
+        // if prefixs[i] != ""{
+            // begin = i
+            // break
+        // }
+    // }
 
-    return strings.Join(prefixs[0:prefix_index], " ") + s[index:]
+    // prefix_index := begin + 1
+    // if prefixs[len(prefixs) - 1] == "" {
+        // prefix_index = begin
+    // }
+
+    // return strings.Join(prefixs[0:prefix_index], " ") + s[index:]
 }
 
 
