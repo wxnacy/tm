@@ -553,24 +553,40 @@ func (this *Terminal) listenModeNormal(e termbox.Event) {
                 return
             }
             this.resultsSplitSymbolPosition += 2
+            if this.position == PositionResults {
+
+                this.cursorY += 2
+            }
         }
         case 'K': {
-            if this.resultsSplitSymbolPosition <= 2 {
+            if this.resultsSplitSymbolPosition <= 4 {
                 return
             }
             this.resultsSplitSymbolPosition -= 2
+            if this.position == PositionResults {
+
+                this.cursorY -= 2
+            }
         }
         case 'H': {
             if this.tableSplitSymbolPosition <= 3 {
                 return
             }
             this.tableSplitSymbolPosition--
+            if this.position == PositionTables {
+                return
+            }
+            this.cursorX--
         }
         case 'L': {
             if this.tableSplitSymbolPosition >= this.width / 2 {
                 return
             }
             this.tableSplitSymbolPosition++
+            if this.position == PositionTables {
+                return
+            }
+            this.cursorX++
         }
     }
 
