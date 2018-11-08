@@ -721,15 +721,7 @@ func (this *Terminal) listenCommandsInsert() {
     e := this.e.e
     switch e.Key {
         case termbox.KeyBackspace2: {
-            currentLineNum := this.commandsSourceCurrentLineNum()
-            cmd := this.commandsSources[currentLineNum]
-            x, _ := this.commandsCursor()
-            if x <= 0 {
-                return
-            }
-            cmd = deleteFromString(cmd, x - 1, 1)
-            this.commandsSources[currentLineNum] = cmd
-            this.cursorX--
+            this.commandsDeleteByBackspace()
         }
         case termbox.KeyCtrlW: {
             cmd := this.commandsSources[this.cursorY]
@@ -904,7 +896,7 @@ func (this *Terminal) listenCommandsNormal() {
 }
 
 func (this *Terminal) insertToCommands() {
-    currentLineNum := this.commandsSourceCurrentLineNum()
+    currentLineNum := this.commandsSourceCurrentLinePosition()
     cmd := this.commandsSources[currentLineNum]
     x, _ := this.commandsCursor()
     cmd = insertInString(
@@ -912,6 +904,28 @@ func (this *Terminal) insertToCommands() {
     )
     this.commandsSources[currentLineNum] = cmd
     this.cursorX +=1
+
+}
+func (this *Terminal) commandsDeleteByBackspace() {
+
+    currentLineNum := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentLineNum]
+    x, _ := this.commandsCursor()
+    if x <= 0 {
+        this.commandsDeleteCurrentLine()
+        maxCX := this.commandsMaxCursorXByCursorY(this.cursorY - 1)
+        this.cursorX = maxCX
+        if this.cursorY == 2 && this.commandsShowBegin > 0 {
+            this.commandsShowBegin--
+        } else {
+            this.cursorY--
+        }
+
+        return
+    }
+    cmd = deleteFromString(cmd, x - 1, 1)
+    this.commandsSources[currentLineNum] = cmd
+    this.cursorX--
 
 }
 
@@ -925,7 +939,7 @@ func (this *Terminal) commandsDeleteCurrentLine() {
     }
     this.commandsSources = deleteFromStringArray(
         this.commandsSources,
-        this.cursorY, 1,
+        this.commandsSourceCurrentLinePosition(), 1,
     )
 
     Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
@@ -939,10 +953,10 @@ func (this *Terminal) commandsDeleteCurrentLine() {
     this.cursorX = minCX
 }
 func (this *Terminal) commandsSourceCurrentLine() string {
-    return this.commandsSources[this.commandsSourceCurrentLineNum()]
+    return this.commandsSources[this.commandsSourceCurrentLinePosition()]
 }
 
-func (this *Terminal) commandsSourceCurrentLineNum() int {
+func (this *Terminal) commandsSourceCurrentLinePosition() int {
     return this.cursorY + this.commandsShowBegin
 }
 
@@ -974,11 +988,12 @@ func (this *Terminal) commandsLineNumWidth() (int) {
 func (this *Terminal) commandsMinCursor() (int, int) {
     return this.tableSplitSymbolPosition + 1 + this.commandsLineNumWidth(), 0
 }
-func (this *Terminal) commandsMaxCursor() (int, int) {
+func (this *Terminal) commandsMaxCursorXByCursorY(y int) (int) {
+
     cx, _ := this.commandsMinCursor()
     var x int
 
-    line := this.commandsSources[this.cursorY]
+    line := this.commandsSources[y + this.commandsShowBegin]
     if len(line) == 0 {
         x = cx
     } else {
@@ -988,7 +1003,10 @@ func (this *Terminal) commandsMaxCursor() (int, int) {
             x++
         }
     }
-    return x, this.commandsMaxCursorY()
+    return x
+}
+func (this *Terminal) commandsMaxCursor() (int, int) {
+    return this.commandsMaxCursorXByCursorY(this.cursorY), this.commandsMaxCursorY()
 }
 func (this *Terminal) commandsMaxCursorY() (int) {
     var y int
@@ -1264,4 +1282,6 @@ func (this *Terminal) resetViewCells() {
 func (this *Terminal) Close() {
     termbox.Close()
 }
+
+
 
