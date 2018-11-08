@@ -724,11 +724,12 @@ func (this *Terminal) listenCommandsInsert() {
             this.commandsDeleteByBackspace()
         }
         case termbox.KeyCtrlW: {
-            cmd := this.commandsSources[this.cursorY]
+            currentPosition := this.commandsSourceCurrentLinePosition()
+            cmd := this.commandsSources[currentPosition]
             cx, _ := this.commandsCursor()
 
             newcmd := deleteStringByCtrlW(cmd, cx)
-            this.commandsSources[this.cursorY] = newcmd
+            this.commandsSources[currentPosition] = newcmd
             if len(cmd) > len(newcmd) {
                 this.cursorX -= len(cmd) - len(newcmd)
             }
@@ -740,14 +741,13 @@ func (this *Terminal) listenCommandsInsert() {
         case termbox.KeyEnter: {
             cx, _ := this.commandsCursor()
             minCX, _ := this.commandsMinCursor()
-            // _, maxCY := this.commandsMaxCursor()
             cmd := this.commandsSources[this.cursorY]
 
             newCmds := splitStringByIndex(cmd, cx)
             this.commandsSources[this.cursorY] = newCmds[0]
             this.commandsSources = insertInStringArray(
                 this.commandsSources,
-                this.cursorY + 1, newCmds[1],
+                this.commandsSourceCurrentLinePosition() + 1, newCmds[1],
             )
             if this.cursorY == this.commandsHeight - 1 {
                 this.commandsShowBegin++
@@ -851,7 +851,7 @@ func (this *Terminal) listenCommandsNormal() {
         }
         case 'y': {
             if this.e.preCh == 'y' {
-                cmd := this.commandsSources[this.cursorY]
+                cmd := this.commandsSourceCurrentLine()
                 this.commandsClipboard = append(
                     []string{cmd}, this.commandsClipboard...,
                 )
@@ -863,7 +863,7 @@ func (this *Terminal) listenCommandsNormal() {
             }
             this.commandsSources = insertInStringArray(
                 this.commandsSources,
-                this.cursorY + 1,
+                this.commandsSourceCurrentLinePosition() + 1,
                 this.commandsClipboard[0],
             )
             this.cursorY++
@@ -871,7 +871,7 @@ func (this *Terminal) listenCommandsNormal() {
         case 'w': {
             nowX, _ := this.commandsCursor()
             cx := stringNextWordBegin(
-                this.commandsSources[this.cursorY], nowX,
+                this.commandsSourceCurrentLine(), nowX,
             )
             minCX, _ := this.commandsMinCursor()
             this.cursorX = cx + minCX
@@ -879,7 +879,7 @@ func (this *Terminal) listenCommandsNormal() {
         case 'e': {
             nowX, _ := this.commandsCursor()
             cx := stringNextWordEnd(
-                this.commandsSources[this.cursorY], nowX,
+                this.commandsSourceCurrentLine(), nowX,
             )
             minCX, _ := this.commandsMinCursor()
             this.cursorX = cx + minCX
@@ -887,7 +887,7 @@ func (this *Terminal) listenCommandsNormal() {
         case 'b': {
             nowX, _ := this.commandsCursor()
             cx := stringPreWordBegin(
-                this.commandsSources[this.cursorY], nowX,
+                this.commandsSourceCurrentLine(), nowX,
             )
             minCX, _ := this.commandsMinCursor()
             this.cursorX = cx + minCX
