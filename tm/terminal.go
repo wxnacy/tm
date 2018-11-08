@@ -57,10 +57,12 @@ type Terminal struct {
     tablesLastCursorY int
 
     results [][]string
+    resultsFormat []string
     resultsShowBegin int
     resultsBottomContent string
     resultTotalCount int
     resultsIsError bool
+    resultsFormatIfNeedRefresh bool
 
     commands []string
     commandsSources []string
@@ -100,10 +102,13 @@ func New(name string) (*Terminal, error){
         tables: make([]string, 0),
         tablesShowBegin: 0,
         tablesLastCursorY: 1,
+
         results: make([][]string, 0),
+        resultsFormat: make([]string, 0),
         resultsShowBegin: 0,
         resultsBottomContent: "",
         resultsIsError: false,
+        resultsFormatIfNeedRefresh: false,
 
         commandsSources: []string{
             "select * from ad",
@@ -158,6 +163,7 @@ func (this *Terminal) ClearResults() {
 
 func (this *Terminal) SetResults(results [][]string) {
     this.results = results
+    this.resultsFormatIfNeedRefresh = true
 }
 
 func (this *Terminal) SetResultsIsError(flag bool) {
@@ -211,7 +217,6 @@ func (this *Terminal) resetTables() {
 }
 
 func (this *Terminal) resetResults() {
-    begin := time.Now()
     // reset bottom
     fg := termbox.ColorCyan
     bg := termbox.ColorDefault
@@ -228,7 +233,11 @@ func (this *Terminal) resetResults() {
     if len(this.results) == 0 {
         return
     }
-    b := mysqlArrayResultsFormat(this.results)
+    if this.resultsFormatIfNeedRefresh {
+        this.resultsFormat = mysqlArrayResultsFormat(this.results)
+    }
+    this.resultsFormatIfNeedRefresh = false
+    b := this.resultsFormat
 
     this.cells[this.resultsSplitSymbolPosition + 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition + 1],
@@ -241,11 +250,12 @@ func (this *Terminal) resetResults() {
         stringToCells(b[1]),
     )
 
+    begin := time.Now()
     for y := 0; y < len(b); y++ {
 
         index := y + this.resultsShowBegin + 2
         if index >= len(b) {
-            Log.Info("reset result time: ", time.Since(begin))
+            Log.Info("reset result half y time: ", time.Since(begin))
             return
         }
         chs := []rune(b[index])
@@ -270,6 +280,7 @@ func (this *Terminal) resetResults() {
                     rbg = termbox.ColorYellow
                 }
             }
+
 
             if oy + 1 < this.height && ox + 1 < this.width{
                 this.cells[oy][ox] = Cell{
@@ -363,6 +374,7 @@ func (this *Terminal) reset() {
     this.resetResults()
     this.resetViewCells()
     this.resetCursor()
+
 }
 
 func (this *Terminal) resetField() {
@@ -662,8 +674,6 @@ func (this *Terminal) listenCommands() {
             this.ClearResults()
             this.SetResultsBottomContent("Waiting")
             this.Rendering()
-
-            // cmd := this.commands[this.cursorY]
 
             this.onExecCommands([]string{
                 this.commandsSourceCurrentLine(),
