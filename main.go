@@ -155,44 +155,13 @@ func main() {
 
     t, err = tm.New(conf)
     if err != nil {
+        tm.Log.Error("New Terminal ", err)
         panic(err)
     }
 
     tables := QueryTables()
     t.SetTables(tables)
     t.OnExecCommands(onExecCommands)
-    // t.OnExecCommands(func (cmds []string) {
-        // begin := time.Now()
-        // sql := cmds[0]
-
-        // var results [][]string
-        // var err error
-        // var rowsAffected int64
-        // if strings.HasPrefix(sql, "select") {
-            // results, err = m.QueryResultArray(sql)
-            // rowsAffected = int64(len(results) - 1)
-        // } else {
-            // res, err := m.Exec(sql)
-            // rowsAffected, err = res.RowsAffected()
-            // checkErr(err)
-        // }
-
-        // if err != nil {
-            // t.SetResultsBottomContent(err.Error())
-            // t.SetResultsIsError(true)
-            // t.ClearResults()
-        // } else {
-            // t.SetResults(results)
-            // t.SetResultsIsError(false)
-            // c := fmt.Sprintf(
-                // "No Erros; %d rows affected, taking %v",
-                // rowsAffected,
-                // time.Since(begin),
-            // )
-            // t.SetResultsBottomContent(c)
-        // }
-
-    // })
 
     for {
         t.Rendering()
@@ -200,7 +169,6 @@ func main() {
     }
 
     defer m.Close()
-
     defer t.Close()
 }
 

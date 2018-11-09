@@ -125,8 +125,15 @@ func stringNextWordEnd(s string, index int) int {
 }
 
 func stringPreWordBegin(s string, index int) int {
-    if index == 0 || index >= len(s) {
+    if index == 0 {
         return index
+    }
+
+    newS := strings.Trim(s, " ")
+
+    if index >= len(s) {
+        splits := strings.Split(newS, " ")
+        return strings.LastIndex(s, splits[len(splits) - 1])
     }
 
     splits := strings.Split(s[0:index], " ")
@@ -144,11 +151,15 @@ func stringPreWordBegin(s string, index int) int {
 }
 
 func deleteStringByCtrlW(s string, index int) string {
-    if index > len(s) || index <= 0{
+    if index <= 0{
         return s
     }
 
     preIndex := stringPreWordBegin(s, index)
+    if index >= len(s) {
+        return s[0:preIndex]
+    }
+
     return s[0:preIndex] + s[index:]
 
     // prefix := s[0:index]

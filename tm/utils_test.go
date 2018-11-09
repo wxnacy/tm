@@ -103,7 +103,7 @@ func TestDeleteStringByCtrlW(t *testing.T) {
     }
 
     res = deleteStringByCtrlW(s, 23)
-    if res != "select * from  user"{
+    if res != "select * from  "{
         t.Error(res + "is error")
     }
 
@@ -300,6 +300,16 @@ func TestStringPreWordBegin(t *testing.T) {
     s = "from * from user"
     i = stringPreWordBegin(s, 13)
     if i != 12 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWordBegin(s, 18)
+    if i != 14 {
+        t.Error(i, "is error")
+    }
+    s = "select * from user  "
+    i = stringPreWordBegin(s, 20)
+    if i != 14 {
         t.Error(i, "is error")
     }
 }

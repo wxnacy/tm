@@ -73,6 +73,11 @@ type Terminal struct {
     commandsWidth, commandsHeight int
     commandsLastCursorX, commandsLastCursorY int
 
+    isShowFrame bool
+    frame []string
+    framePositionX, framePositionY int
+    frameWidth, frameHeight int
+
     cells [][]Cell
     viewCells [][]Cell
     onOpenTable func(name string)
