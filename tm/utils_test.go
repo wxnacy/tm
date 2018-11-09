@@ -312,4 +312,59 @@ func TestStringPreWordBegin(t *testing.T) {
     if i != 14 {
         t.Error(i, "is error")
     }
+    s = "select   * from user"
+    i = stringPreWordBegin(s, 9)
+    if i != 0 {
+        t.Error(i, "is error")
+    }
+}
+
+func TestStringPreWord(t *testing.T) {
+    var s string
+    var i string
+    s = "select * from user"
+    i = stringPreWord(s, 0)
+    if i != "" {
+        t.Error(i, "is error")
+    }
+
+    s = "select * from user"
+    i = stringPreWord(s, 2)
+    if i != "se" {
+        t.Error(i, "is error")
+    }
+
+    s = "select * from user"
+    i = stringPreWord(s, 7)
+    if i != "select" {
+        t.Error(i, "is error")
+    }
+
+    s = "select * from user"
+    i = stringPreWord(s, 7)
+    if i != "select" {
+        t.Error(i, "is error")
+    }
+    s = "select * from user"
+    i = stringPreWord(s, 9)
+    if i != "*" {
+        t.Error(i, "is error")
+    }
+
+    s = "select   * from user"
+    i = stringPreWord(s, 9)
+    if i != "select" {
+        t.Error(i, "is error")
+    }
+
+    s = "select user  "
+    i = stringPreWord(s, 12)
+    if i != "user" {
+        t.Error(i, "is error")
+    }
+    s = "select user  "
+    i = stringPreWord(s, 14)
+    if i != "user" {
+        t.Error(i, "is error")
+    }
 }

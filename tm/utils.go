@@ -124,6 +124,24 @@ func stringNextWordEnd(s string, index int) int {
     return strings.Index(s[index:], end) + len(end) + index - 1
 }
 
+
+func stringPreWord(s string, index int) string {
+    if index <= 0 {
+        return ""
+    }
+
+    i := stringPreWordBegin(s, index)
+
+    end := index
+
+    if index >= len(s) {
+        end = len(s) - 1
+    }
+
+
+    return strings.Split(strings.Trim(s[i:end], " "), " ")[0]
+}
+
 func stringPreWordBegin(s string, index int) int {
     if index == 0 {
         return index
@@ -136,7 +154,7 @@ func stringPreWordBegin(s string, index int) int {
         return strings.LastIndex(s, splits[len(splits) - 1])
     }
 
-    splits := strings.Split(s[0:index], " ")
+    splits := strings.Split(strings.Trim(s[0:index], " "), " ")
 
     if len(splits) == 1 {
         return 0
