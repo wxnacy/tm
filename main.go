@@ -14,6 +14,7 @@ const (
 )
 
 var m *tm.Mysql
+var t *tm.Terminal
 var err error
 var args []string
 var conf string
@@ -25,7 +26,6 @@ var db string
 var creDir = os.Getenv("HOME") + "/.tm/credentials"
 
 var v bool
-
 
 func InitArgs() {
     flag.BoolVar(&v, "v", false, "")
@@ -99,7 +99,6 @@ func InitMysql() {
 }
 
 func QueryTables() []string{
-
     res, err := m.QueryResultArray("show tables")
     if err != nil {
         panic(err)
@@ -120,7 +119,7 @@ func main() {
     }
     InitMysql()
 
-    t, err := tm.New(conf)
+    t, err = tm.New(conf)
     if err != nil {
         panic(err)
     }
@@ -140,7 +139,6 @@ func main() {
         } else {
             res, err := m.Exec(sql)
             rowsAffected, err = res.RowsAffected()
-            tm.Log.Info("rowsAffected", rowsAffected)
             checkErr(err)
         }
 
@@ -162,10 +160,8 @@ func main() {
     })
 
     for {
-        // if t.IsListenKeyBorad() {
         t.Rendering()
         t.ListenKeyBorad()
-        // }
     }
 
     defer m.Close()
