@@ -50,6 +50,16 @@ func (this *Mysql) Connect() (error) {
     return nil
 }
 
+func (this *Mysql) Exec(sql string, args ...interface{}) (sql.Result, error) {
+    stmt, err := this.db.Prepare(sql)
+    if err != nil {
+        return nil, err
+    }
+    res, err := stmt.Exec(args...)
+    defer stmt.Close()
+    return res, err
+}
+
 func (this *Mysql) Query(
     query string, args ...interface{},
 ) ([]map[string]string, error){
@@ -124,86 +134,10 @@ func (this *Mysql) Close() error{
     return this.db.Close()
 }
 
-func Insert(db *sql.DB, name string) (int64, error){
-    // 准备 sql 语句
-    stmt, err := db.Prepare("insert into book (name) values (?)")
-    defer stmt.Close()
-    if err != nil {
-        return 0, err
-    }
-    // 插入参数并执行语句
-    res, err := stmt.Exec(name)
-    if err != nil {
-        return 0, err
-    }
-    // 最后插入的 id
-    id, err := res.LastInsertId()
-    if err != nil {
-        return 0, err
-    }
-    return id, nil
-}
-
-func InsertTx(db *sql.DB, name string) (int64, error){
-    // 开启事务
-    tx, err := db.Begin()
-    if err != nil {
-        return 0, err
-    }
-    // 准备 sql 语句
-    stmt, err := tx.Prepare("insert into book (name) values (?)")
-    defer stmt.Close()
-    if err != nil {
-        return 0, err
-    }
-    // 插入参数并执行语句
-    res, err := stmt.Exec(name)
-    if err != nil {
-        if rollbackErr := tx.Rollback(); rollbackErr != nil {
-            return 0, rollbackErr
-        }
-        return 0, err
-    }
-    if commitErr := tx.Commit(); commitErr != nil {
-        return 0, commitErr
-    }
-    // 最后插入的 id
-    id, err := res.LastInsertId()
-    if err != nil {
-        return 0, err
-    }
-    return id, nil
-}
-
-func Update(db *sql.DB, id int64) error {
-    stmt, err := db.Prepare("update book set name = ? where id = ?")
-    defer stmt.Close()
-    if err != nil {
-        return err
-    }
-    _, err = stmt.Exec("update-name", id)
-    if err != nil {
-        return err
-    }
-    return nil
-}
-
-func DeleteById(db *sql.DB, id int64) error {
-    stmt, err := db.Prepare("delete from book where id = ?")
-    defer stmt.Close()
-    if err != nil {
-        return err
-    }
-    _, err = stmt.Exec(id)
-    if err != nil {
-        return err
-    }
-    return nil
-}
-
 func checkErr(err error) {
     if err != nil {
         panic(err)
     }
 }
+
 

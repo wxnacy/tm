@@ -471,6 +471,7 @@ func (this *Terminal) AppendCellFromString(s string) {
 }
 
 func (this *Terminal) Rendering() {
+    tb := time.Now()
     this.reset()
     begin := time.Now()
     termbox.Clear(termbox.ColorWhite, termbox.ColorDefault)
@@ -489,7 +490,8 @@ func (this *Terminal) Rendering() {
     }
     termbox.SetCursor(this.cursorX, this.cursorY)
     termbox.Flush()
-    Log.Infof("Rendering time: %v", time.Since(begin))
+    Log.Infof("Rendering flush time: %v", time.Since(begin))
+    Log.Infof("Rendering total time: %v", time.Since(tb))
 }
 
 func (this *Terminal) ListenKeyBorad() {
@@ -631,7 +633,7 @@ func (this *Terminal) listenTables() {
             this.Rendering()
 
             t := this.currentTable()
-            cmds := []string{fmt.Sprintf("select * from %s limit 20", t)}
+            cmds := []string{fmt.Sprintf("select * from %s", t)}
             this.onExecCommands(cmds)
             this.moveCursorToResults()
             this.isListenKeyBorad = true

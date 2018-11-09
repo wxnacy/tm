@@ -112,16 +112,6 @@ func QueryTables() []string{
     return ts
 }
 
-func OpenTable(name string) [][]string {
-
-    sql := fmt.Sprintf("select * from %s limit 10", name)
-    results, err := m.QueryResultArray(sql)
-    if err != nil {
-        panic(err)
-    }
-    return results
-}
-
 func main() {
     InitArgs()
     if v {
@@ -137,18 +127,23 @@ func main() {
 
     tables := QueryTables()
     t.SetTables(tables)
-    if len(tables) >= 2 {
-        t.SetResults(OpenTable(tables[1]))
-    }
-    // t.SetResults(OpenTable("ad"))
     t.OnExecCommands(func (cmds []string) {
-        // time.Sleep(1 * time.Second)
         begin := time.Now()
-        sql := fmt.Sprintf(cmds[0])
-        results, err := m.QueryResultArray(sql)
-        // end := time.Now()
+        sql := cmds[0]
 
-        // dur := end.Sub(begin).Nanoseconds()
+        var results [][]string
+        var err error
+        var rowsAffected int64
+        if strings.HasPrefix(sql, "select") {
+            results, err = m.QueryResultArray(sql)
+            rowsAffected = int64(len(results) - 1)
+        } else {
+            res, err := m.Exec(sql)
+            rowsAffected, err = res.RowsAffected()
+            tm.Log.Info("rowsAffected", rowsAffected)
+            checkErr(err)
+        }
+
         if err != nil {
             t.SetResultsBottomContent(err.Error())
             t.SetResultsIsError(true)
@@ -158,7 +153,7 @@ func main() {
             t.SetResultsIsError(false)
             c := fmt.Sprintf(
                 "No Erros; %d rows affected, taking %v",
-                len(results) - 1,
+                rowsAffected,
                 time.Since(begin),
             )
             t.SetResultsBottomContent(c)
