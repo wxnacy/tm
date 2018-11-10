@@ -21,6 +21,13 @@ func TestCellsToString(t *testing.T) {
     }
 }
 
+// func TestCommandToCells(t *testing.T) {
+    // s := " hahah ssss sss   dd  "
+    // if  commandToCells(s, termbox.ColorDefault) == nil {
+        // t.Error("error")
+    // }
+// }
+
 func TestInsertInString(t *testing.T) {
 
     s := "select"
@@ -366,5 +373,25 @@ func TestStringPreWord(t *testing.T) {
     i = stringPreWord(s, 14)
     if i != "user" {
         t.Error(i, "is error")
+    }
+}
+
+func TestInArray(t *testing.T) {
+    var i int
+    i = inArray(1, []int{3, 2, 1})
+    if i != 2 {
+        t.Error(i, " is error")
+    }
+    i = inArray(4, []int{3, 2, 1})
+    if i != -1 {
+        t.Error(i, " is error")
+    }
+    i = inArray(3, []int{3, 2, 1})
+    if i != 0 {
+        t.Error(i, " is error")
+    }
+    i = inArray("1", []string{"3", "1"})
+    if i != 1 {
+        t.Error(i, " is error")
     }
 }

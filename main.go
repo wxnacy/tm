@@ -7,10 +7,11 @@ import (
     "flag"
     "os"
     "strings"
+    "database/sql"
 )
 
 const (
-    version string = "0.1.5"
+    version string = "0.2.0"
 )
 
 var m *tm.Mysql
@@ -114,18 +115,20 @@ func QueryTables() []string{
 func onExecCommands(cmds []string) {
 
     begin := time.Now()
-    sql := cmds[0]
+    cmd := cmds[0]
 
     var results [][]string
     var err error
     var rowsAffected int64
-    if strings.HasPrefix(sql, "select") {
-        results, err = m.QueryResultArray(sql)
+    var res sql.Result
+    if strings.HasPrefix(cmd, "select") {
+        results, err = m.QueryResultArray(cmd)
         rowsAffected = int64(len(results) - 1)
     } else {
-        res, err := m.Exec(sql)
-        rowsAffected, err = res.RowsAffected()
-        checkErr(err)
+        res, err = m.Exec(cmd)
+        if err == nil {
+            rowsAffected, err = res.RowsAffected()
+        }
     }
 
     if err != nil {

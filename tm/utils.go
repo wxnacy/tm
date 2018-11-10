@@ -4,6 +4,7 @@ import (
     "strings"
     "github.com/nsf/termbox-go"
     "time"
+    "reflect"
 )
 
 func cellsToString(cells []Cell) string {
@@ -26,6 +27,54 @@ func stringToCellsWithColor(s string, fg termbox.Attribute, bg termbox.Attribute
     }
     return cells
 }
+
+const (
+    CmdRed string = "into values from where order by desc asc index on add table"
+    CmdGreen = "select drop alter insert update delete set explain like and in"
+    CmdBlue = "count "
+)
+
+func commandToCells(s string, bg termbox.Attribute) []Cell {
+    splits := strings.Split(s, " ")
+
+    cells := make([]Cell, 0)
+
+
+    for i, word := range splits {
+        chs := []rune(word)
+        // nbg := bg
+
+        for _, d := range chs {
+            fg := termbox.ColorDefault
+            if inArray(word, strings.Split(CmdGreen, " ")) > -1 {
+                fg = termbox.ColorGreen
+            } else if inArray(word, strings.Split(CmdRed, " ")) > -1 {
+                fg = termbox.ColorRed
+            } else if inArray(word, strings.Split(CmdBlue, " ")) > -1  {
+                fg = termbox.ColorBlue
+            } else if strings.ContainsRune(word, '`') ||
+            strings.ContainsRune(word, '\'') ||
+            strings.ContainsRune(word, '"') {
+                fg = termbox.ColorCyan
+            }
+            if strings.ContainsRune("; ( ) ,", d) {
+                fg = termbox.ColorDefault
+            } else if strings.ContainsRune("0123456789", d) {
+                fg = termbox.ColorCyan
+            }
+            cells = append(cells, Cell{Ch: d, Fg: fg, Bg: bg})
+        }
+
+
+        if i < len(splits) - 1 {
+            cells = append(cells, Cell{Ch: ' ', Bg: bg})
+        }
+
+    }
+    return cells
+}
+
+
 
 func cellsReplace(cells []Cell, index int, newCells []Cell) []Cell{
 
@@ -282,4 +331,22 @@ func max(x, y int) int {
         return x
     }
     return y
+}
+
+func inArray(val interface{}, array interface{}) (index int) {
+    index = -1
+
+    switch reflect.TypeOf(array).Kind() {
+    case reflect.Slice:
+        s := reflect.ValueOf(array)
+
+        for i := 0; i < s.Len(); i++ {
+            if reflect.DeepEqual(val, s.Index(i).Interface()) == true {
+                index = i
+                return
+            }
+        }
+    }
+
+    return
 }

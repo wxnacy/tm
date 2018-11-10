@@ -316,7 +316,7 @@ func (this *Terminal) initCommands() {
 func (this *Terminal) resetCommands() {
     px, _ := this.resultsPosition()
     cy := this.commandsMaxCursorY()
-    minCX, _ := this.commandsMinCursor()
+    // minCX, _ := this.commandsMinCursor()
 
     this.cells[this.resultsSplitSymbolPosition - 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition - 1],
@@ -336,34 +336,44 @@ func (this *Terminal) resetCommands() {
         if index >= len(this.commands) {
             return
         }
-        line := []rune(this.commands[index])
-        for j := 0; j < len(line); j++ {
-            cellsX := this.tableSplitSymbolPosition + j + 1
-            fg := termbox.ColorDefault
-            bg := termbox.ColorDefault
-            if cellsX < minCX  {
-                bg = termbox.ColorBlack
-            }
 
-            if this.isCursorInCommands() && i == this.cursorY{
-
-                if cellsX >= minCX{
-                    bg = termbox.ColorBlack
-                } else {
-                    bg = termbox.ColorDefault
-                }
-            }
-
-            if cellsX < len(this.cells[i]) {
-                this.cells[i][cellsX] = Cell{
-                    Ch: line[j],
-                    Fg: fg,
-                    Bg: bg,
-                }
-            }
-
-
+        bg := termbox.ColorDefault
+        if this.isCursorInCommands() && i == this.cursorY{
+            bg = termbox.ColorBlack
         }
+        this.cells[i] = cellsReplace(
+            this.cells[i], 
+            this.tableSplitSymbolPosition + 1,
+            commandToCells(this.commands[index], bg),
+        )
+        // line := []rune(this.commands[index])
+        // for j := 0; j < len(line); j++ {
+            // cellsX := this.tableSplitSymbolPosition + j + 1
+            // fg := termbox.ColorDefault
+            // bg := termbox.ColorDefault
+            // if cellsX < minCX  {
+                // bg = termbox.ColorBlack
+            // }
+
+            // if this.isCursorInCommands() && i == this.cursorY{
+
+                // if cellsX >= minCX{
+                    // bg = termbox.ColorBlack
+                // } else {
+                    // bg = termbox.ColorDefault
+                // }
+            // }
+
+            // if cellsX < len(this.cells[i]) {
+                // this.cells[i][cellsX] = Cell{
+                    // Ch: line[j],
+                    // Fg: fg,
+                    // Bg: bg,
+                // }
+            // }
+
+
+        // }
 
     }
 }
@@ -729,14 +739,25 @@ func (this *Terminal) listenCommands() {
                     this.commandsBottomContent = ""
                 }
                 case termbox.KeyEnter: {
-                    if this.commandsBottomContent == ":w" {
-                        this.commandsSave()
-                        this.commandsBottomContent = fmt.Sprintf(
-                            "\"%s\" %dL written",
-                            cmdPath(this.name), this.commandsLength(),
-                        )
-                    } else {
-                        this.commandsBottomContent = ""
+
+                    switch this.commandsBottomContent {
+                        case ":w": {
+                            this.commandsSave()
+                            this.commandsBottomContent = fmt.Sprintf(
+                                "\"%s\" %dL written",
+                                cmdPath(this.name), this.commandsLength(),
+                            )
+                        }
+                        case ":wq": {
+                            this.commandsSave()
+                            os.Exit(0)
+                        }
+                        case ":q": {
+                            os.Exit(0)
+                        }
+                        default: {
+                            this.commandsBottomContent = ""
+                        }
                     }
                     this.commandsMode = ModeNormal
                     this.cursorX = this.lastCursorX
