@@ -128,7 +128,7 @@ func New(name string) (*Terminal, error){
         commandsMode: ModeNormal,
         commandsClipboard: make([]string, 0),
 
-        isShowFrames: true,
+        isShowFrames: false,
         frames: make([]string, 0),
         framesHighlightLinePosition: -1,
         framesShowBegin: 0,
@@ -194,11 +194,9 @@ func (this *Terminal) resetFrames() {
     if ! this.isShowFrames {
         return
     }
-    // lines := []string{"action", "article", "blog"}
-    // this.frames = this.tables[1:]
     _, maxLength := arrayMaxLength(this.frames)
 
-    this.framesPositionX = this.cursorX + 2
+    // this.framesPositionX = this.cursorX + 2
 
     if this.cursorY < this.height / 2 {
 
@@ -455,8 +453,8 @@ func (this *Terminal) resetField() {
     this.commandsWidth = this.width - this.tableSplitSymbolPosition - 1
     this.commandsHeight = this.resultsSplitSymbolPosition - 1
 
-    // this.frames = this.tables[1:]
-    this.frames = []string{"action", "code", "task"}
+    this.frames = this.tables[1:]
+    // this.frames = []string{"action", "code", "task"}
     this.framesHeight = min(this.height / 2 - 1, len(this.frames))
 }
 
@@ -624,6 +622,17 @@ func (this *Terminal) ListenKeyBorad() {
                     this.commandsInsertString(cx, word)
                 }
 
+            }
+        }
+        case termbox.KeyArrowUp: {
+
+            if this.isShowFrames {
+                this.framesMoveUp()
+            }
+        }
+        case termbox.KeyArrowDown: {
+            if this.isShowFrames {
+                this.framesMoveDown()
             }
         }
     }
@@ -1214,6 +1223,28 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
         return 0
     }
     return len(this.commands) - 1 - cy
+}
+
+func (this *Terminal) framesMoveUp() {
+    if len(this.frames) == this.framesHeight {
+        if this.framesHighlightLinePosition <= 0 {
+            this.framesHighlightLinePosition = this.framesHeight - 1
+        } else {
+            this.framesHighlightLinePosition--
+        }
+        return
+    }
+
+    if this.framesHighlightLinePosition <= 0 {
+        if this.framesShowBegin > 0 {
+            this.framesShowBegin--
+        } else {
+            this.framesHighlightLinePosition = this.framesHeight - 1
+            this.framesShowBegin = len(this.frames) - this.framesHeight
+        }
+    } else {
+        this.framesHighlightLinePosition--
+    }
 }
 
 func (this *Terminal) framesMoveDown() {
