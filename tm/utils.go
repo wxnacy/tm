@@ -370,3 +370,15 @@ func arrayMaxLength(array []string) (s string, length int) {
     return
 
 }
+
+func arrayFilterLikeString(array []string, s string) []string {
+    newArr := make([]string, 0)
+
+    for _, d := range array {
+        if strings.Contains(d, s) {
+            newArr = append(newArr, d)
+        }
+    }
+    return newArr
+
+}

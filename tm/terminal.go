@@ -453,8 +453,6 @@ func (this *Terminal) resetField() {
     this.commandsWidth = this.width - this.tableSplitSymbolPosition - 1
     this.commandsHeight = this.resultsSplitSymbolPosition - 1
 
-    this.frames = this.tables[1:]
-    // this.frames = []string{"action", "code", "task"}
     this.framesHeight = min(this.height / 2 - 1, len(this.frames))
 }
 
@@ -877,13 +875,16 @@ func (this *Terminal) listenCommandsInsert() {
     switch e.Key {
         case termbox.KeyBackspace2: {
             this.commandsDeleteByBackspace()
+            this.framesChangeByBackspace()
         }
         case termbox.KeyCtrlW: {
             this.commandsDeleteByCtrlW()
+            this.framesChangeByBackspace()
         }
         case termbox.KeyEsc: {
             this.commandsMode = ModeNormal
             this.commandsBottomContent = ""
+            this.isShowFrames = false
         }
         case termbox.KeyEnter: {
             cx, _ := this.commandsCursor()
@@ -912,9 +913,6 @@ func (this *Terminal) listenCommandsInsert() {
         return
     }
 
-    if this.e.ch == ';' {
-        this.isShowFrames = false
-    }
     this.commandsInsertByKeyBorad()
 }
 func (this *Terminal) listenCommandsNormal() {
@@ -1086,18 +1084,8 @@ func (this *Terminal) listenCommandsNormal() {
 
 func (this *Terminal) commandsInsertByKeyBorad() {
     x, _ := this.commandsCursor()
-    cmd := this.commandsInsert(x, string(this.e.ch))
-    // cmd := this.commandsSourceCurrentLine()
-    Log.Infof("preword %s cmd %s x %d", stringPreWord(cmd, x + 1 ), cmd, x)
-    preWord := stringPreWord(cmd, x+1)
-
-    if this.e.ch == ' ' && this.isShowFrames {
-        this.isShowFrames = false
-    }
-    if preWord == "from" && this.e.ch == ' ' {
-        this.isShowFrames = true
-        this.framesPositionX = this.cursorX
-    }
+    this.commandsInsert(x, string(this.e.ch))
+    this.framesChangeByInsert()
 
 }
 
@@ -1122,6 +1110,19 @@ func (this *Terminal) commandsDeletePreWord() (newcmd string){
     return
 }
 
+
+func (this *Terminal) commandsPreRune() (r rune){
+    cx, _ := this.commandsCursor()
+    r = 0
+    if cx == 0 {
+        return
+    }
+
+    cmd := this.commandsSourceCurrentLine()
+    r = []rune(cmd)[cx- 1]
+    return
+
+}
 func (this *Terminal) commandsPreWord() (word string){
     cx, _ := this.commandsCursor()
     word = stringPreWord(
@@ -1129,7 +1130,6 @@ func (this *Terminal) commandsPreWord() (word string){
         cx,
     )
     return
-
 }
 
 func (this *Terminal) commandsDeleteByCtrlW() (newcmd string){
@@ -1297,6 +1297,64 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
         return 0
     }
     return len(this.commands) - 1 - cy
+}
+
+func (this *Terminal) framesChangeByBackspace() {
+    preWord := this.commandsPreWord()
+    if this.isShowFrames {
+        preRune := this.commandsPreRune()
+        if preRune == 0 {
+            this.isShowFrames = false
+            return
+        }
+        if preWord != "from" && preRune == ' ' {
+            this.isShowFrames = false
+            return
+        }
+        if preWord == "from" {
+            if preRune == 'm' {
+                this.isShowFrames = false
+                return
+            }
+            this.framesInitForTables()
+            return
+        }
+
+        this.frames = arrayFilterLikeString(this.tables[1:], preWord)
+    }
+
+}
+func (this *Terminal) framesChangeByInsert() {
+    preWord := this.commandsPreWord()
+
+    if preWord == "from" && this.e.ch == ' ' && !this.isShowFrames {
+        this.framesInitForTables()
+        this.framesPositionX = this.cursorX - 1
+        return
+    }
+
+    if this.e.ch == ' ' && this.isShowFrames {
+        this.isShowFrames = false
+        return
+    }
+
+    if this.isShowFrames {
+        Log.Infof("preword %s", preWord)
+        this.frames = arrayFilterLikeString(this.tables[1:], preWord)
+        return
+    }
+
+    if this.e.ch == ';' && this.isShowFrames {
+        this.isShowFrames = false
+        return
+    }
+
+}
+
+func (this *Terminal) framesInitForTables() {
+    this.isShowFrames = true
+    this.frames = this.tables[1:]
+    this.framesHighlightLinePosition = -1
 }
 
 func (this *Terminal) framesMoveUp() {
