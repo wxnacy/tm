@@ -44,17 +44,22 @@ func commandToCells(s string, bg termbox.Attribute) []Cell {
         chs := []rune(word)
         // nbg := bg
 
+        compareWord := word
+        if strings.HasSuffix(word, ";") {
+            compareWord = compareWord[0:len(compareWord)- 1]
+        }
+
         for _, d := range chs {
             fg := termbox.ColorDefault
-            if inArray(word, strings.Split(CmdGreen, " ")) > -1 {
+            if inArray(compareWord, strings.Split(CmdGreen, " ")) > -1 {
                 fg = termbox.ColorGreen
-            } else if inArray(word, strings.Split(CmdRed, " ")) > -1 {
+            } else if inArray(compareWord, strings.Split(CmdRed, " ")) > -1 {
                 fg = termbox.ColorRed
-            } else if inArray(word, strings.Split(CmdBlue, " ")) > -1  {
+            } else if inArray(compareWord, strings.Split(CmdBlue, " ")) > -1  {
                 fg = termbox.ColorBlue
-            } else if strings.ContainsRune(word, '`') ||
-            strings.ContainsRune(word, '\'') ||
-            strings.ContainsRune(word, '"') {
+            } else if strings.ContainsRune(compareWord, '`') ||
+            strings.ContainsRune(compareWord, '\'') ||
+            strings.ContainsRune(compareWord, '"') {
                 fg = termbox.ColorCyan
             }
             if strings.ContainsRune("; ( ) ,", d) {

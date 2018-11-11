@@ -911,6 +911,10 @@ func (this *Terminal) listenCommandsInsert() {
     if this.e.ch <= 0 {
         return
     }
+
+    if this.e.ch == ';' {
+        this.isShowFrames = false
+    }
     this.commandsInsertByKeyBorad()
 }
 func (this *Terminal) listenCommandsNormal() {
@@ -946,12 +950,40 @@ func (this *Terminal) listenCommandsNormal() {
             this.commandsSources[this.cursorY] = cmd
         }
         case 'i': {
-            this.commandsMode = ModeInsert
-            this.commandsBottomContent = "-- INSERT --"
+            this.commandsChangeMode(ModeInsert)
+        }
+        case 'I': {
+            this.commandsChangeMode(ModeInsert)
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = minCX
+        }
+        case 'a': {
+            this.commandsChangeMode(ModeInsert)
+            this.cursorX++
+        }
+        case 'A': {
+            this.commandsChangeMode(ModeInsert)
+            maxCX, _ := this.commandsMaxCursor()
+            this.cursorX = maxCX
+        }
+        case 'S': {
+            this.commandsSources[this.commandsSourceCurrentLinePosition()] = ""
+            this.commandsChangeMode(ModeInsert)
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = minCX
+        }
+        case 'c': {
+            if this.e.preCh == 'c' {
+
+                this.commandsSources[this.commandsSourceCurrentLinePosition()] = ""
+                this.commandsChangeMode(ModeInsert)
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = minCX
+                this.e.ch = 0
+            }
         }
         case 'o': {
-            this.commandsMode = ModeInsert
-            this.commandsBottomContent = "-- INSERT --"
+            this.commandsChangeMode(ModeInsert)
 
             this.commandsSources = insertInStringArray(
                 this.commandsSources,
@@ -997,6 +1029,14 @@ func (this *Terminal) listenCommandsNormal() {
             _, cy := this.commandsMaxCursor()
             this.cursorY = cy
             this.commandsShowBegin = this.commandsMaxShowBegin()
+        }
+        case '0': {
+            lineNumWidth := this.commandsLineNumWidth()
+            this.cursorX = this.tableSplitSymbolPosition + 1 + lineNumWidth
+        }
+        case '$': {
+            maxCX, _ := this.commandsMaxCursor()
+            this.cursorX = maxCX
         }
         case 'y': {
             if this.e.preCh == 'y' {
@@ -1161,8 +1201,10 @@ func (this *Terminal) commandsDeleteCurrentLine() (line string){
         return
     }
 
-    Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
-    if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
+    // Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
+
+    maxCY := this.commandsMaxCursorY()
+    if this.cursorY == maxCY {
         if this.commandsShowBegin > 0 {
             this.commandsShowBegin--
         } else {
@@ -1180,6 +1222,13 @@ func (this *Terminal) commandsSourceCurrentLinePosition() int {
     return this.cursorY + this.commandsShowBegin
 }
 
+func (this *Terminal) commandsChangeMode(mode Mode) {
+    this.commandsMode = mode
+    if mode == ModeInsert {
+        this.commandsBottomContent = "-- INSERT --"
+    }
+
+}
 func (this *Terminal) commandsSave() {
     SaveFile(cmdPath(this.name), strings.Join(this.commandsSources, "\n"))
 }
