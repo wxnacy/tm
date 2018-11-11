@@ -619,7 +619,7 @@ func (this *Terminal) ListenKeyBorad() {
                     }
                     cx, _ := this.commandsCursor()
                     word = "`" + word + "`"
-                    this.commandsInsertString(cx, word)
+                    this.commandsInsert(cx, word)
                 }
 
             }
@@ -888,10 +888,11 @@ func (this *Terminal) listenCommandsInsert() {
         case termbox.KeyEnter: {
             cx, _ := this.commandsCursor()
             minCX, _ := this.commandsMinCursor()
-            cmd := this.commandsSources[this.cursorY]
+            currentLineY := this.commandsSourceCurrentLinePosition()
+            cmd := this.commandsSources[currentLineY]
 
             newCmds := splitStringByIndex(cmd, cx)
-            this.commandsSources[this.cursorY] = newCmds[0]
+            this.commandsSources[currentLineY] = newCmds[0]
             this.commandsSources = insertInStringArray(
                 this.commandsSources,
                 this.commandsSourceCurrentLinePosition() + 1, newCmds[1],
@@ -1045,7 +1046,7 @@ func (this *Terminal) listenCommandsNormal() {
 
 func (this *Terminal) commandsInsertByKeyBorad() {
     x, _ := this.commandsCursor()
-    cmd := this.commandsInsertString(x, string(this.e.ch))
+    cmd := this.commandsInsert(x, string(this.e.ch))
     // cmd := this.commandsSourceCurrentLine()
     Log.Infof("preword %s cmd %s x %d", stringPreWord(cmd, x + 1 ), cmd, x)
     preWord := stringPreWord(cmd, x+1)
@@ -1060,7 +1061,7 @@ func (this *Terminal) commandsInsertByKeyBorad() {
 
 }
 
-func (this *Terminal) commandsInsertString(index int, s string) (cmd string){
+func (this *Terminal) commandsInsert(index int, s string) (cmd string){
     currentLineNum := this.commandsSourceCurrentLinePosition()
     cmd = this.commandsSources[currentLineNum]
     cmd = insertInString(
@@ -1116,6 +1117,9 @@ func (this *Terminal) commandsDeleteByBackspace() {
             this.cursorY--
         }
 
+        cx , _ := this.commandsCursor()
+        this.commandsInsert(cx, cmd)
+        this.cursorX -= len(cmd)
         return
     }
     cmd = deleteFromString(cmd, x - 1, 1)
