@@ -73,15 +73,18 @@ type Terminal struct {
     commandsWidth, commandsHeight int
     commandsLastCursorX, commandsLastCursorY int
 
-    isShowFrame bool
-    frame []string
-    framePositionX, framePositionY int
-    frameWidth, frameHeight int
+    isShowFrames bool
+    frames []string
+    framesPositionX, framesPositionY int
+    framesWidth, framesHeight int
+    framesHighlightLinePosition int
+    framesShowBegin int
 
     cells [][]Cell
     viewCells [][]Cell
     onOpenTable func(name string)
     onExecCommands func(cmds []string)
+
 }
 
 func New(name string) (*Terminal, error){
@@ -124,6 +127,13 @@ func New(name string) (*Terminal, error){
         commandsBottomContent: "",
         commandsMode: ModeNormal,
         commandsClipboard: make([]string, 0),
+
+        isShowFrames: true,
+        frames: make([]string, 0),
+        framesHighlightLinePosition: -1,
+        framesShowBegin: 0,
+        framesPositionX: 0,
+        framesPositionY: 0,
 
         cells: make([][]Cell, 0),
         viewCells: make([][]Cell, 0),
@@ -177,6 +187,54 @@ func (this *Terminal) SetResultsIsError(flag bool) {
 
 func (this *Terminal) SetResultsBottomContent(content string) {
     this.resultsBottomContent = content
+}
+
+
+func (this *Terminal) resetFrames() {
+    if ! this.isShowFrames {
+        return
+    }
+    // lines := []string{"action", "article", "blog"}
+    // this.frames = this.tables[1:]
+    _, maxLength := arrayMaxLength(this.frames)
+
+    this.framesPositionX = this.cursorX + 2
+
+    if this.cursorY < this.height / 2 {
+
+        this.framesPositionY = this.cursorY + 1
+    } else {
+        this.framesPositionY = this.cursorY - this.framesHeight
+    }
+
+    for y := 0; y < this.framesHeight; y++ {
+
+        chs := []rune(this.frames[y + this.framesShowBegin])
+        cy := this.framesPositionY + y
+
+        bg := termbox.ColorWhite
+        if y == this.framesHighlightLinePosition {
+            Log.Infof("y %d hith %d", y, this.framesHighlightLinePosition)
+            bg = termbox.ColorGreen
+        }
+
+        for x := -1; x < maxLength; x++ {
+            cx := this.framesPositionX + 1 + x
+            ch := ' '
+            if x + 1 <= len(chs) && x > -1 {
+                ch = chs[x]
+            }
+
+            this.cells[cy][cx] = Cell{
+                Ch: ch,
+                Bg: bg,
+            }
+
+        }
+
+
+    }
+
 }
 
 func (this *Terminal) resetTables() {
@@ -342,7 +400,7 @@ func (this *Terminal) resetCommands() {
             bg = termbox.ColorBlack
         }
         this.cells[i] = cellsReplace(
-            this.cells[i], 
+            this.cells[i],
             this.tableSplitSymbolPosition + 1,
             commandToCells(this.commands[index], bg),
         )
@@ -388,6 +446,7 @@ func (this *Terminal) reset() {
     this.resetResults()
     this.resetViewCells()
     this.resetCursor()
+    this.resetFrames()
 
 }
 
@@ -395,6 +454,10 @@ func (this *Terminal) resetField() {
 
     this.commandsWidth = this.width - this.tableSplitSymbolPosition - 1
     this.commandsHeight = this.resultsSplitSymbolPosition - 1
+
+    // this.frames = this.tables[1:]
+    this.frames = []string{"action", "code", "task"}
+    this.framesHeight = min(this.height / 2 - 1, len(this.frames))
 }
 
 func (this *Terminal) resetCursor() {
@@ -541,6 +604,26 @@ func (this *Terminal) ListenKeyBorad() {
         case termbox.KeyEnter: {
             if this.isCursorInTables() {
                 this.onOpenTable(this.currentTable())
+            }
+        }
+        case termbox.KeyTab: {
+            if this.isShowFrames {
+                this.framesMoveDown()
+                Log.Infof(
+                    "high %d height %d",
+                    this.framesHighlightLinePosition, this.framesHeight,
+                )
+                if this.isCursorInCommands() {
+                    word := this.frames[this.framesHighlightLinePosition]
+                    Log.Infof("high %s", word)
+                    if this.commandsPreWord() != "from" {
+                        this.commandsDeleteByCtrlW()
+                    }
+                    cx, _ := this.commandsCursor()
+                    word = "`" + word + "`"
+                    this.commandsInsertString(cx, word)
+                }
+
             }
         }
     }
@@ -787,15 +870,7 @@ func (this *Terminal) listenCommandsInsert() {
             this.commandsDeleteByBackspace()
         }
         case termbox.KeyCtrlW: {
-            currentPosition := this.commandsSourceCurrentLinePosition()
-            cmd := this.commandsSources[currentPosition]
-            cx, _ := this.commandsCursor()
-
-            newcmd := deleteStringByCtrlW(cmd, cx)
-            this.commandsSources[currentPosition] = newcmd
-            if len(cmd) > len(newcmd) {
-                this.cursorX -= len(cmd) - len(newcmd)
-            }
+            this.commandsDeleteByCtrlW()
         }
         case termbox.KeyEsc: {
             this.commandsMode = ModeNormal
@@ -819,13 +894,14 @@ func (this *Terminal) listenCommandsInsert() {
                 this.cursorY++
             }
             this.cursorX = minCX
+            this.isShowFrames = false
         }
     }
 
     if this.e.ch <= 0 {
         return
     }
-    this.insertToCommands()
+    this.commandsInsertByKeyBorad()
 }
 func (this *Terminal) listenCommandsNormal() {
     e := this.e.e
@@ -958,17 +1034,64 @@ func (this *Terminal) listenCommandsNormal() {
     }
 }
 
-func (this *Terminal) insertToCommands() {
-    currentLineNum := this.commandsSourceCurrentLinePosition()
-    cmd := this.commandsSources[currentLineNum]
+func (this *Terminal) commandsInsertByKeyBorad() {
     x, _ := this.commandsCursor()
-    cmd = insertInString(
-        cmd, x, string(this.e.ch),
-    )
-    this.commandsSources[currentLineNum] = cmd
-    this.cursorX +=1
+    cmd := this.commandsInsertString(x, string(this.e.ch))
+    // cmd := this.commandsSourceCurrentLine()
+    Log.Infof("preword %s cmd %s x %d", stringPreWord(cmd, x + 1 ), cmd, x)
+    preWord := stringPreWord(cmd, x+1)
+
+    if this.e.ch == ' ' && this.isShowFrames {
+        this.isShowFrames = false
+    }
+    if preWord == "from" && this.e.ch == ' ' {
+        this.isShowFrames = true
+        this.framesPositionX = this.cursorX
+    }
 
 }
+
+func (this *Terminal) commandsInsertString(index int, s string) (cmd string){
+    currentLineNum := this.commandsSourceCurrentLinePosition()
+    cmd = this.commandsSources[currentLineNum]
+    cmd = insertInString(
+        cmd, index, s,
+    )
+    this.commandsSources[currentLineNum] = cmd
+    this.cursorX += len(s)
+    return
+}
+
+func (this *Terminal) commandsDeletePreWord() (newcmd string){
+
+    currentPosition := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentPosition]
+    cx, _ := this.commandsCursor()
+    newcmd = deleteStringByCtrlW(cmd, cx)
+    this.commandsSources[currentPosition] = newcmd
+    return
+}
+
+func (this *Terminal) commandsPreWord() (word string){
+    cx, _ := this.commandsCursor()
+    word = stringPreWord(
+        this.commandsSourceCurrentLine(),
+        cx,
+    )
+    return
+
+}
+
+func (this *Terminal) commandsDeleteByCtrlW() (newcmd string){
+
+    cmd := this.commandsSourceCurrentLine()
+    newcmd = this.commandsDeletePreWord()
+    if len(cmd) > len(newcmd) {
+        this.cursorX -= len(cmd) - len(newcmd)
+    }
+    return
+}
+
 func (this *Terminal) commandsDeleteByBackspace() {
 
     currentLineNum := this.commandsSourceCurrentLinePosition()
@@ -1092,6 +1215,37 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
     }
     return len(this.commands) - 1 - cy
 }
+
+func (this *Terminal) framesMoveDown() {
+    if len(this.frames) == this.framesHeight {
+        if this.framesHighlightLinePosition < this.framesHeight - 1{
+            this.framesHighlightLinePosition++
+        } else {
+            this.framesHighlightLinePosition=0
+        }
+        return
+    }
+
+    if this.framesShowBegin == len(this.frames) - this.framesHeight {
+        this.framesShowBegin = 0
+        this.framesHighlightLinePosition=0
+        return
+    }
+
+    if this.framesHighlightLinePosition < this.framesHeight - 1 {
+        this.framesHighlightLinePosition++
+    } else {
+        Log.Infof(
+            "frames %d framheight %d showb %d",
+            this.frames, this.framesHeight, this.framesShowBegin,
+        )
+        if len(this.frames) - this.framesHeight  > this.framesShowBegin {
+            this.framesShowBegin++
+        }
+    }
+
+}
+
 func (this *Terminal) resultsSize() (int, int) {
     x := this.width - this.tableSplitSymbolPosition - 2
     y := this.height - this.resultsSplitSymbolPosition - 2

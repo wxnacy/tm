@@ -184,7 +184,7 @@ func stringPreWord(s string, index int) string {
     end := index
 
     if index >= len(s) {
-        end = len(s) - 1
+        end = len(s)
     }
 
 
@@ -349,4 +349,19 @@ func inArray(val interface{}, array interface{}) (index int) {
     }
 
     return
+}
+
+func arrayMaxLength(array []string) (s string, length int) {
+    //获取字符串数组中最长的长度
+    length = 0
+    s = ""
+    for i := 0; i < len(array); i++ {
+        l := len(array[i])
+        if l > length {
+            length = l
+            s = array[i]
+        }
+    }
+    return
+
 }

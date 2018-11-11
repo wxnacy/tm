@@ -395,3 +395,21 @@ func TestInArray(t *testing.T) {
         t.Error(i, " is error")
     }
 }
+
+func TestArrayMaxLength(t *testing.T) {
+    var s string
+    var i int
+    s, i  = arrayMaxLength(
+        []string{"a", "bc", "def"},
+    )
+    if s != "def" && i != 2 {
+        t.Error(s, " is error")
+    }
+
+    s, i  = arrayMaxLength(
+        []string{"a", "bcbn", "def"},
+    )
+    if s != "bcbn" && i != 1 {
+        t.Error(s, " is error")
+    }
+}
