@@ -1106,16 +1106,26 @@ func (this *Terminal) commandsDeleteByBackspace() {
 
     currentLineNum := this.commandsSourceCurrentLinePosition()
     cmd := this.commandsSources[currentLineNum]
-    x, _ := this.commandsCursor()
+    x, y := this.commandsCursor()
+    // Log.Infof("x %d Y %d minCX %d, minCY %d", x, y, minCX, minCY)
+    if x == 0 && y == 0 {
+        return
+    }
+
     if x <= 0 {
-        this.commandsDeleteCurrentLine()
-        maxCX := this.commandsMaxCursorXByCursorY(this.cursorY - 1)
-        this.cursorX = maxCX
-        if this.cursorY == 2 && this.commandsShowBegin > 0 {
+        if cmd == "" {
+            return
+        }
+        this.commandsDeleteCurrentString()
+        maxCY := this.commandsMaxCursorY()
+        if this.cursorY == maxCY && this.commandsShowBegin > 0 {
             this.commandsShowBegin--
         } else {
             this.cursorY--
         }
+
+        maxCX, _ := this.commandsMaxCursor()
+        this.cursorX = maxCX
 
         cx , _ := this.commandsCursor()
         this.commandsInsert(cx, cmd)
@@ -1128,18 +1138,28 @@ func (this *Terminal) commandsDeleteByBackspace() {
 
 }
 
-func (this *Terminal) commandsDeleteCurrentLine() {
+func (this *Terminal) commandsDeleteCurrentString() (line string){
 
-    minCX, _ := this.commandsMinCursor()
+    line = this.commandsSourceCurrentLine()
+
     if len(this.commandsSources) == 1 {
         this.commandsSources = []string{""}
-        this.cursorX = minCX
         return
     }
     this.commandsSources = deleteFromStringArray(
         this.commandsSources,
         this.commandsSourceCurrentLinePosition(), 1,
     )
+    return
+}
+func (this *Terminal) commandsDeleteCurrentLine() (line string){
+    line = this.commandsDeleteCurrentString()
+
+    minCX, _ := this.commandsMinCursor()
+    if len(this.commandsSources) == 1 {
+        this.cursorX = minCX
+        return
+    }
 
     Log.Info("dd ", this.cursorY, this.commandsShowBegin, len(this.commandsSources))
     if this.cursorY == len(this.commandsSources) - this.commandsShowBegin{
@@ -1150,6 +1170,7 @@ func (this *Terminal) commandsDeleteCurrentLine() {
         }
     }
     this.cursorX = minCX
+    return
 }
 func (this *Terminal) commandsSourceCurrentLine() string {
     return this.commandsSources[this.commandsSourceCurrentLinePosition()]
