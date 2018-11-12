@@ -372,10 +372,19 @@ func arrayMaxLength(array []string) (s string, length int) {
 }
 
 func arrayFilterLikeString(array []string, s string) []string {
+    if s == "" {
+        return array
+    }
     newArr := make([]string, 0)
 
     for _, d := range array {
-        if strings.Contains(d, s) {
+        if strings.HasPrefix(d, s) {
+            newArr = append(newArr, d)
+        }
+    }
+
+    for _, d := range array {
+        if strings.Contains(d, s) && inArray(d, newArr) == -1{
             newArr = append(newArr, d)
         }
     }
