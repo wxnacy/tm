@@ -11,7 +11,7 @@ import (
 )
 
 const (
-    version string = "0.3.0"
+    version string = "0.3.1"
 )
 
 var m *tm.Mysql
@@ -121,7 +121,7 @@ func onExecCommands(cmds []string) {
     var err error
     var rowsAffected int64
     var res sql.Result
-    if strings.HasPrefix(cmd, "select") {
+    if tm.IsQuerySql(cmd) {
         results, err = m.QueryResultArray(cmd)
         rowsAffected = int64(len(results) - 1)
     } else {

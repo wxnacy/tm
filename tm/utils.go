@@ -28,23 +28,16 @@ func stringToCellsWithColor(s string, fg termbox.Attribute, bg termbox.Attribute
     return cells
 }
 
-const (
-    CmdRed string = "into values from where order by desc asc index on add table"
-    CmdGreen = "select drop alter insert update delete set explain like and in"
-    CmdBlue = "count "
-)
-
 func commandToCells(s string, bg termbox.Attribute) []Cell {
     splits := strings.Split(s, " ")
 
     cells := make([]Cell, 0)
 
-
     for i, word := range splits {
         chs := []rune(word)
         // nbg := bg
 
-        compareWord := word
+        compareWord := strings.ToLower(word)
         if strings.HasSuffix(word, ";") {
             compareWord = compareWord[0:len(compareWord)- 1]
         }

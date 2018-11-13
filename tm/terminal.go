@@ -195,6 +195,7 @@ func (this *Terminal) resetFrames() {
         return
     }
     _, maxLength := arrayMaxLength(this.frames)
+    maxLength = maxLength + 3
 
     // this.framesPositionX = this.cursorX + 2
 
@@ -1298,43 +1299,33 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
 
 func (this *Terminal) framesChangeByBackspace() {
     preWord := this.commandsPreWord()
+    cx, _ := this.commandsCursor()
+    isHideTablesFrames := isHideTablesFrames(
+        this.commandsSourceCurrentLine(), cx,
+    )
+    Log.Info("isShowFrames ", this.isShowFrames)
     if this.isShowFrames {
-        preRune := this.commandsPreRune()
-        if preRune == 0 {
+        if isHideTablesFrames {
             this.isShowFrames = false
             return
         }
-        if preWord != "from" && preWord != "update" && preRune == ' ' {
-            this.isShowFrames = false
-            return
-        }
-        if preWord == "from" {
-            if preRune == 'm' {
-                this.isShowFrames = false
-                return
-            }
-            this.framesInitForTables("")
-            return
-        }
 
-        if preWord == "update" {
-            if preRune == 'e' {
-                this.isShowFrames = false
-                return
-            }
-            this.framesInitForTables("")
-            return
+        filter := preWord
+        if this.commandsPreRune() == ' ' {
+            filter = ""
         }
-
-        this.framesInitForTables(preWord)
+        this.framesInitForTables(filter)
     }
 
 }
 func (this *Terminal) framesChangeByInsert() {
     preWord := this.commandsPreWord()
+    cx, _ := this.commandsCursor()
+    isShowTablesFrames := isShowTablesFrames(
+        this.commandsSourceCurrentLine(), cx,
+    )
 
-    is_show_tables := preWord == "from" || preWord == "update"
-    if is_show_tables && this.e.ch == ' ' && !this.isShowFrames {
+    if isShowTablesFrames && !this.isShowFrames {
         this.framesInitForTables("")
         this.framesPositionX = this.cursorX - 1
         return

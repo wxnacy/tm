@@ -4,6 +4,16 @@ import (
     "fmt"
     "database/sql"
     _ "github.com/go-sql-driver/mysql"
+    "strings"
+)
+
+const (
+    querySqlBegin string = "select show"
+    execSqlBegin = "update delete drop create"
+
+    CmdRed = "into values from where order by desc asc index on add table if"
+    CmdGreen = "select drop alter insert update delete set explain like and in show create exists"
+    CmdBlue = "count "
 )
 
 type Mysql struct {
@@ -140,4 +150,70 @@ func checkErr(err error) {
     }
 }
 
+func IsQuerySql(cmd string) (flag bool) {
+    flag = false
+    if cmd == "" {
+        return
+    }
+    cmdBegin := strings.ToLower(strings.Split(cmd, " ")[0])
+    i := inArray(cmdBegin, strings.Split(querySqlBegin, " "))
+    if i > -1 {
+        flag = true
+    }
+    return
+}
 
+func isShowTablesFrames(cmd string, index int) (flag bool) {
+    flag = false
+    if index < 2 {
+        return
+    }
+    if len(cmd) < index {
+        return
+    }
+    preRune := []rune(cmd)[index-1]
+    prePreRune := []rune(cmd)[index-2]
+
+    preWord := stringPreWord(cmd, index)
+    flag1 := preWord == "from" || preWord == "update" || preWord == "table"
+    flag2 := preRune == ' ' && prePreRune != ' '
+    flag = flag1 && flag2
+    return
+}
+
+func isHideTablesFrames(cmd string, index int) (flag bool) {
+    flag = true
+    if index < 2 {
+        return
+    }
+    if len(cmd) < index {
+        return
+    }
+    preRune := []rune(cmd)[index-1]
+    if preRune == 0 {
+        return
+    }
+    // prePreRune := []rune(cmd)[index-2]
+
+    preWord := stringPreWord(cmd, index)
+    flag1 := preWord != "from" && preWord != "update" && preWord != "table"
+    flag2 := preRune == ' '
+    // flag2 := preRune == ' ' && prePreRune != ' '
+    if flag1 && flag2 {
+        return
+    }
+
+    if preWord == "from" && preRune == 'm' {
+        return
+    }
+
+    if preWord == "update" && preRune == 'e' {
+        return
+    }
+    if preWord == "table" && preRune == 'e' {
+        return
+    }
+
+    flag = false
+    return
+}
