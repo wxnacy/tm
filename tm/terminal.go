@@ -59,6 +59,7 @@ type Terminal struct {
     results [][]string
     resultsFormat []string
     resultsShowBegin int
+    resultsLeftShowBegin int
     resultsBottomContent string
     resultTotalCount int
     resultsIsError bool
@@ -114,6 +115,7 @@ func New(name string) (*Terminal, error){
         results: make([][]string, 0),
         resultsFormat: make([]string, 0),
         resultsShowBegin: 0,
+        resultsLeftShowBegin: 0,
         resultsBottomContent: "",
         resultsIsError: false,
         resultsFormatIfNeedRefresh: false,
@@ -304,7 +306,7 @@ func (this *Terminal) resetResults() {
     this.cells[this.resultsSplitSymbolPosition + 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition + 1],
         this.tableSplitSymbolPosition + 1,
-        stringToCells(b[0]),
+        stringToCells(b[0][this.resultsLeftShowBegin:]),
     )
     this.cells[this.resultsSplitSymbolPosition + 2] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition + 2],
@@ -343,9 +345,12 @@ func (this *Terminal) resetResults() {
                 }
             }
 
-            if oy + 1 < this.height && ox + 1 < this.width{
+            chsIndex := x + this.resultsLeftShowBegin
+            if oy + 1 < this.height && ox + 1 < this.width &&
+            chsIndex < len(chs){
+
                 this.cells[oy][ox] = Cell{
-                    Ch: chs[x],
+                    Ch: chs[chsIndex],
                     Fg: rfg,
                     Bg: rbg,
                 }
@@ -731,6 +736,7 @@ func (this *Terminal) listenTables() {
         }
         case 'o': {
             this.isListenKeyBorad = false
+            this.resultsLeftShowBegin = 0
             this.ClearResults()
             this.SetResultsBottomContent("Waiting")
             this.Rendering()
@@ -760,6 +766,12 @@ func (this *Terminal) listenResults() {
         case 'k': {
             this.moveCursor(0, -2)
         }
+        case 'l': {
+            this.resultsMoveRight()
+        }
+        case 'h': {
+            this.resultsMoveLeft()
+        }
     }
 
 }
@@ -777,6 +789,7 @@ func (this *Terminal) listenCommands() {
         case termbox.KeyCtrlR: {
             this.commandsSave()
             this.isListenKeyBorad = false
+            this.resultsLeftShowBegin = 0
             this.ClearResults()
             this.SetResultsBottomContent("Waiting")
             this.Rendering()
@@ -1412,6 +1425,39 @@ func (this *Terminal) framesMoveDown() {
 
 }
 
+func (this *Terminal) resultsMoveRight()  {
+    width := this.resultsFormatWidth()
+    if width == 0 {
+        return
+    }
+
+    resultWidth, _ := this.resultsSize()
+
+    if this.resultsLeftShowBegin >= width - resultWidth {
+        return
+    }
+
+    this.resultsLeftShowBegin += resultWidth / 2
+}
+func (this *Terminal) resultsMoveLeft()  {
+
+    resultWidth, _ := this.resultsSize()
+
+    if this.resultsLeftShowBegin > 0 {
+        offset := min(resultWidth / 2, this.resultsLeftShowBegin)
+        this.resultsLeftShowBegin -= offset
+    }
+}
+
+func (this *Terminal) resultsFormatWidth() (width int) {
+    width = 0
+    if len(this.results) <= 1 {
+        return
+    }
+
+    width = len(this.resultsFormat[0])
+    return
+}
 func (this *Terminal) resultsSize() (int, int) {
     x := this.width - this.tableSplitSymbolPosition - 2
     y := this.height - this.resultsSplitSymbolPosition - 2
