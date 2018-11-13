@@ -124,6 +124,8 @@ func onExecCommands(cmds []string) {
     if tm.IsQuerySql(cmd) {
         results, err = m.QueryResultArray(cmd)
         rowsAffected = int64(len(results) - 1)
+    } else if strings.HasPrefix(cmd, "-- ") {
+
     } else {
         res, err = m.Exec(cmd)
         if err == nil {

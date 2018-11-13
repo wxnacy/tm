@@ -60,6 +60,10 @@ func commandToCells(s string, bg termbox.Attribute) []Cell {
             } else if strings.ContainsRune("0123456789", d) {
                 fg = termbox.ColorCyan
             }
+
+            if strings.Contains(s, "-- ") {
+                fg = termbox.ColorCyan
+            } 
             cells = append(cells, Cell{Ch: d, Fg: fg, Bg: bg})
         }
 

@@ -11,9 +11,9 @@ const (
     querySqlBegin string = "select show"
     execSqlBegin = "update delete drop create"
 
-    CmdRed = "into values from where order by desc asc index on add table if"
-    CmdGreen = "select drop alter insert update delete set explain like and in show create exists"
-    CmdBlue = "count "
+    CmdRed = "into values from where order by desc asc index on add table if column null default"
+    CmdGreen = "select drop alter insert update delete set explain like and in show create exists not"
+    CmdBlue = "count processlist"
 )
 
 type Mysql struct {
