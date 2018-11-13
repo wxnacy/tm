@@ -949,14 +949,14 @@ func (this *Terminal) listenCommandsNormal() {
             }
         }
         case 'x': {
-
-            cmd := this.commandsSources[this.cursorY]
+            currentLineNum := this.commandsSourceCurrentLinePosition()
+            cmd := this.commandsSources[currentLineNum]
             x, _ := this.commandsCursor()
             if x < 0 {
                 return
             }
             cmd = deleteFromString(cmd, x, 1)
-            this.commandsSources[this.cursorY] = cmd
+            this.commandsSources[currentLineNum] = cmd
         }
         case 'i': {
             this.commandsChangeMode(ModeInsert)
@@ -1186,7 +1186,6 @@ func (this *Terminal) commandsDeleteByBackspace() {
     cmd = deleteFromString(cmd, x - 1, 1)
     this.commandsSources[currentLineNum] = cmd
     this.cursorX--
-
 }
 
 func (this *Terminal) commandsDeleteCurrentString() (line string){
