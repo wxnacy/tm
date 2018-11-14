@@ -373,22 +373,31 @@ func arrayMaxLength(array []string) (s string, length int) {
 }
 
 func arrayFilterLikeString(array []string, s string) []string {
+    begin := time.Now()
     if s == "" {
         return array
     }
     newArr := make([]string, 0)
 
-    for _, d := range array {
-        if strings.HasPrefix(d, s) {
-            newArr = append(newArr, d)
+    for i := len(s); i > 0; i-- {
+        compareWord := s[0:i]
+        // Log.Info(compareWord)
+        for _, d := range array {
+            if strings.HasPrefix(d, compareWord) && inArray(d, newArr) == -1 {
+                newArr = append(newArr, d)
+            }
         }
     }
 
-    for _, d := range array {
-        if strings.Contains(d, s) && inArray(d, newArr) == -1{
-            newArr = append(newArr, d)
+    if len(newArr) < len(array) {
+        for _, d := range array {
+            if strings.ContainsAny(d, s) && inArray(d, newArr) == -1{
+                newArr = append(newArr, d)
+            }
         }
     }
+
+    Log.Infof("arrayFilterLikeString time: %v", time.Since(begin))
     return newArr
 
 }
