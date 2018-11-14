@@ -1,5 +1,5 @@
 # tm
-Terminal Mysql 
+Terminal Mysql
 
 ## 更新日志
 
@@ -9,6 +9,8 @@ Terminal Mysql
 - 2、results 区域增加左右移动的功能
 - 3、修改 commands 区域 x 的 bug
 - 4、commands 区域增加了一些配色
+- 5、results 区域增加详情的提示框
+- 6、results 修改结果为空时上下移动的 bug
 
 **0.3.0**
 - 更新时间：2018-11-11

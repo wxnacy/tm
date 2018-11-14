@@ -7,11 +7,13 @@ import (
     "strings"
     "fmt"
     "time"
+    "encoding/json"
 )
 
 
 type Mode uint8
 type Position uint8
+type FramesMode uint8
 
 const (
     ModeInsert Mode = iota
@@ -20,6 +22,9 @@ const (
     PositionTables Position = iota
     PositionCommands
     PositionResults
+
+    FramesModeTables FramesMode = iota
+    FramesModeResultsDetail
 )
 
 type Event struct {
@@ -57,6 +62,7 @@ type Terminal struct {
     tablesLastCursorY int
 
     results [][]string
+    resultsColumns []string
     resultsFormat []string
     resultsShowBegin int
     resultsLeftShowBegin int
@@ -76,6 +82,7 @@ type Terminal struct {
 
     isShowFrames bool
     frames []string
+    framesMode FramesMode
     framesPositionX, framesPositionY int
     framesWidth, framesHeight int
     framesHighlightLinePosition int
@@ -196,8 +203,6 @@ func (this *Terminal) resetFrames() {
     if ! this.isShowFrames {
         return
     }
-    _, maxLength := arrayMaxLength(this.frames)
-    maxLength = maxLength + 3
 
     // this.framesPositionX = this.cursorX + 2
 
@@ -210,29 +215,44 @@ func (this *Terminal) resetFrames() {
 
     for y := 0; y < this.framesHeight; y++ {
 
-        chs := []rune(this.frames[y + this.framesShowBegin])
-        cy := this.framesPositionY + y
-
         bg := termbox.ColorWhite
-        if y == this.framesHighlightLinePosition {
-            Log.Infof("y %d hith %d", y, this.framesHighlightLinePosition)
-            bg = termbox.ColorGreen
-        }
+        cy := this.framesPositionY + y
+        framesIndex := y + this.framesShowBegin
+        if framesIndex < len(this.frames) {
 
-        for x := -1; x < maxLength; x++ {
-            cx := this.framesPositionX + 1 + x
-            ch := ' '
-            if x + 1 <= len(chs) && x > -1 {
-                ch = chs[x]
+            chs := []rune(this.frames[framesIndex])
+
+            if y == this.framesHighlightLinePosition {
+                Log.Infof("y %d hith %d", y, this.framesHighlightLinePosition)
+                bg = termbox.ColorGreen
             }
 
-            this.cells[cy][cx] = Cell{
-                Ch: ch,
-                Bg: bg,
+            for x := -1; x < this.framesWidth; x++ {
+                cx := this.framesPositionX + 1 + x
+                ch := ' '
+                if x + 1 <= len(chs) && x > -1 {
+                    ch = chs[x]
+                }
+                this.cells[cy][cx] = Cell{
+                    Ch: ch,
+                    Bg: bg,
+                }
             }
 
-        }
+        } else {
 
+            for x := -1; x < this.framesWidth; x++ {
+                cx := this.framesPositionX + 1 + x
+                ch := ' '
+                // if x + 1 <= len(chs) && x > -1 {
+                    // ch = chs[x]
+                // }
+                this.cells[cy][cx] = Cell{
+                    Ch: ch,
+                    Bg: bg,
+                }
+            }
+        }
 
     }
 
@@ -297,9 +317,12 @@ func (this *Terminal) resetResults() {
     if len(this.results) == 0 {
         return
     }
+
     if this.resultsFormatIfNeedRefresh {
+        this.resultsColumns = this.results[0]
         this.resultsFormat = mysqlArrayResultsFormat(this.results)
     }
+    Log.Info("colums ", this.resultsColumns)
     this.resultsFormatIfNeedRefresh = false
     b := this.resultsFormat
 
@@ -578,11 +601,9 @@ func (this *Terminal) ListenKeyBorad() {
 
     e := this.PollEvent()
     switch e.Key {
-        // case termbox.KeyEsc: {
-            // if ! this.isCursorInCommands() {
-                // os.Exit(0)
-            // }
-        // }
+        case termbox.KeyEsc: {
+            this.isShowFrames = false
+        }
         case termbox.KeyCtrlH: {
             if this.isCursorInResults() || this.isCursorInCommands(){
                 this.moveCursorToTables()
@@ -762,15 +783,24 @@ func (this *Terminal) listenResults() {
     switch e.Ch {
         case 'j':{
             this.moveCursor(0, 2)
+            if this.isShowFrames {
+                this.framesInitForResultsDetail()
+            }
         }
         case 'k': {
             this.moveCursor(0, -2)
+            if this.isShowFrames {
+                this.framesInitForResultsDetail()
+            }
         }
         case 'l': {
             this.resultsMoveRight()
         }
         case 'h': {
             this.resultsMoveLeft()
+        }
+        case 'o': {
+            this.framesInitForResultsDetail()
         }
     }
 
@@ -1363,16 +1393,65 @@ func (this *Terminal) framesChangeByInsert() {
 
 func (this *Terminal) framesInitForTables(filter string) {
     this.isShowFrames = true
+    this.framesMode = FramesModeTables
     this.frames = arrayFilterLikeString(this.tables[1:], filter)
     this.framesHighlightLinePosition = -1
     this.framesShowBegin = 0
+
+    _, maxLength := arrayMaxLength(this.frames)
+    this.framesWidth = maxLength + 3
 }
 
 func (this *Terminal) framesInitForResultsDetail() {
+    fields := this.resultsCurrentLine()
+    columns := this.resultsColumns
 
+    this.isShowFrames = true
+    this.framesMode = FramesModeResultsDetail
+    frames := make([]string, 0)
+    for i, d := range columns {
+        field := fields[i]
+        if strings.Contains(field, "{") {
+            var jsonData map[string]interface{}
+            err := json.Unmarshal([]byte(field), &jsonData)
+            if err == nil {
+                bytes, err := json.MarshalIndent(jsonData, "", "  ")
+                jsonStr := string(bytes)
+                if err == nil {
+                    jsonArr := strings.Split(jsonStr, "\n")
+                    for j, ja := range jsonArr {
+                        fmt := strings.Repeat(" ", len(d)) + "  "
+                        if j == 0 {
+                            fmt = d + ": "
+                        }
+                        frames = append(frames, fmt + ja)
+                    }
+
+                }
+            }
+        } else {
+
+            frames = append(frames, fmt.Sprintf("%s: %s", d, field))
+        }
+    }
+    this.frames = frames
+    this.framesPositionX = this.cursorX
+    this.framesHighlightLinePosition = -1
+    this.framesShowBegin = 0
+    _, maxLength := arrayMaxLength(this.frames)
+    maxLength = maxLength + 2
+    resutsWidth, _ := this.resultsSize()
+    this.framesWidth = min(maxLength, resutsWidth)
 }
 
 func (this *Terminal) framesMoveUp() {
+    if this.framesMode == FramesModeResultsDetail {
+        this.framesShowBegin -= this.framesHeight / 2
+        if this.framesShowBegin < 0 {
+            this.framesShowBegin = 0
+        }
+        return
+    }
     if len(this.frames) == this.framesHeight {
         if this.framesHighlightLinePosition <= 0 {
             this.framesHighlightLinePosition = this.framesHeight - 1
@@ -1395,9 +1474,17 @@ func (this *Terminal) framesMoveUp() {
 }
 
 func (this *Terminal) framesMoveDown() {
+    if this.framesMode == FramesModeResultsDetail {
+        wantShowBegin := this.framesShowBegin + this.framesHeight / 2
+        if wantShowBegin < len(this.frames) {
+            this.framesShowBegin = wantShowBegin
+        }
+        return
+    }
+    offset := 1
     if len(this.frames) == this.framesHeight {
         if this.framesHighlightLinePosition < this.framesHeight - 1{
-            this.framesHighlightLinePosition++
+            this.framesHighlightLinePosition += offset
         } else {
             this.framesHighlightLinePosition=0
         }
@@ -1411,14 +1498,14 @@ func (this *Terminal) framesMoveDown() {
     }
 
     if this.framesHighlightLinePosition < this.framesHeight - 1 {
-        this.framesHighlightLinePosition++
+        this.framesHighlightLinePosition += offset
     } else {
         Log.Infof(
             "frames %d framheight %d showb %d",
             this.frames, this.framesHeight, this.framesShowBegin,
         )
         if len(this.frames) - this.framesHeight  > this.framesShowBegin {
-            this.framesShowBegin++
+            this.framesShowBegin += offset
         }
     }
 
@@ -1466,6 +1553,21 @@ func (this *Terminal) resultsPosition() (x, y int) {
     return this.tableSplitSymbolPosition + 1, this.resultsSplitSymbolPosition + 1
 }
 
+func (this *Terminal) resultsCurrentLine() (res []string) {
+    res = make([]string, 0)
+
+    _, cy := this.resultsCursor()
+
+    index := cy / 2 + this.resultsShowBegin / 2 + 1
+    res = this.results[index]
+
+    return
+}
+func (this *Terminal) resultsCursor() (x int, y int) {
+    x = this.cursorX - this.tableSplitSymbolPosition - 1
+    y = this.cursorY - this.resultsSplitSymbolPosition - 3
+    return
+}
 func (this *Terminal) resultsMinCursor() (int, int) {
     // results 区域最小的光标坐标位置
     var x, y int
@@ -1517,6 +1619,7 @@ func (this *Terminal) moveCursorToResults() {
     this.cursorX = minCX
     this.cursorY = minCY
     this.position = PositionResults
+    this.isShowFrames = false
 }
 
 func (this *Terminal) moveCursorToTables() {
@@ -1527,6 +1630,7 @@ func (this *Terminal) moveCursorToTables() {
     this.cursorX = 0
     this.cursorY = this.tablesLastCursorY
     this.position = PositionTables
+    this.isShowFrames = false
 }
 
 func (this *Terminal) moveCursorToCommands() {
@@ -1538,6 +1642,7 @@ func (this *Terminal) moveCursorToCommands() {
     this.cursorX = this.commandsLastCursorX
     this.cursorY = this.commandsLastCursorY
     this.position = PositionCommands
+    this.isShowFrames = false
 }
 
 func (this *Terminal) isCursorInTables() bool {
@@ -1654,6 +1759,9 @@ func (this *Terminal) moveCursor(offsetX, offsetY int) {
         case PositionResults: {
             _, py := this.resultsPosition()
             _, maxCY := this.resultsMaxCursor()
+            if len(this.results) == 1 {
+                return
+            }
 
             if nowY < py + 2 {
                 if offsetY < 0 && this.resultsShowBegin > 0 {
