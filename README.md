@@ -1,5 +1,33 @@
-# tm
-Terminal Mysql
+# Terminal Mysql
+Mysql client like vim in terminal
+
+Terminal Mysql 像 Vim 一样在 Terminal 中使用 Mysql 客户端
+
+## 演示
+
+![tm](tm.gif)
+
+
+## 下载
+
+### Go
+
+```bash
+$ go get github.com/wxnacy/tm
+```
+
+### Mac
+
+```bash
+$ wget https://github.com/wxnacy/tm/blob/master/bin/darwin_amd64/tm?raw=true -O tm && chmod +x tm && mv tm /usr/local/bin
+```
+
+### Linux
+
+```bash
+$ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O tm && chmod +x tm && mv tm /usr/local/bin
+```
+
 
 ## 更新日志
 
