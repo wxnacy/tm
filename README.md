@@ -31,8 +31,12 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 
 ## 更新日志
 
+**0.3.2**
+- 更新时间：2018-11-14
+- commands 增加普通输入的提示框
+
 **0.3.1**
-- 更新时间：2018-11-13
+- 更新时间：2018-11-14
 - 1、完善弹出框的时机及稳定性
 - 2、results 区域增加左右移动的功能
 - 3、修改 commands 区域 x 的 bug

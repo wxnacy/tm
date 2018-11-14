@@ -11,10 +11,13 @@ const (
     querySqlBegin string = "select show"
     execSqlBegin = "update delete drop create"
 
-    CmdRed = "into values from where order by desc asc index on add table if column null default"
+    CmdRed = "into values from where order by desc asc index on add table if column null default limit"
     CmdGreen = "select drop alter insert update delete set explain like and in show create exists not"
-    CmdBlue = "count processlist"
+    CmdBlue = "count processlist sum"
 )
+
+var allCmd = fmt.Sprintf("%s %s %s",CmdGreen, CmdBlue, CmdRed)
+var allCmds = strings.Split(strings.ToUpper(allCmd), " ")
 
 type Mysql struct {
     db *sql.DB
@@ -174,7 +177,7 @@ func isShowTablesFrames(cmd string, index int) (flag bool) {
     preRune := []rune(cmd)[index-1]
     prePreRune := []rune(cmd)[index-2]
 
-    preWord := stringPreWord(cmd, index)
+    preWord := strings.ToLower(stringPreWord(cmd, index))
     flag1 := preWord == "from" || preWord == "update" || preWord == "table"
     flag2 := preRune == ' ' && prePreRune != ' '
     flag = flag1 && flag2
@@ -195,7 +198,7 @@ func isHideTablesFrames(cmd string, index int) (flag bool) {
     }
     // prePreRune := []rune(cmd)[index-2]
 
-    preWord := stringPreWord(cmd, index)
+    preWord := strings.ToLower(stringPreWord(cmd, index))
     flag1 := preWord != "from" && preWord != "update" && preWord != "table"
     flag2 := preRune == ' '
     // flag2 := preRune == ' ' && prePreRune != ' '

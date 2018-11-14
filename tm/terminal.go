@@ -25,6 +25,7 @@ const (
 
     FramesModeTables FramesMode = iota
     FramesModeResultsDetail
+    FramesModeCommandsInput
 )
 
 type Event struct {
@@ -632,29 +633,20 @@ func (this *Terminal) ListenKeyBorad() {
         case termbox.KeyTab: {
             if this.isShowFrames {
                 this.framesMoveDown()
-                if this.isCursorInCommands() {
-                    word := this.frames[this.framesHighlightLinePosition]
-                    Log.Infof("high %s", word)
-                    if this.commandsPreWord() != "from" &&
-                    this.commandsPreWord() != "update"{
-                        this.commandsDeleteByCtrlW()
-                    }
-                    cx, _ := this.commandsCursor()
-                    word = "`" + word + "`"
-                    this.commandsInsert(cx, word)
-                }
-
+                this.framesReplace()
             }
         }
         case termbox.KeyArrowUp: {
 
             if this.isShowFrames {
                 this.framesMoveUp()
+                this.framesReplace()
             }
         }
         case termbox.KeyArrowDown: {
             if this.isShowFrames {
                 this.framesMoveDown()
+                this.framesReplace()
             }
         }
     }
@@ -1361,17 +1353,25 @@ func (this *Terminal) framesChangeByBackspace() {
 
 }
 func (this *Terminal) framesChangeByInsert() {
+    Log.Info("insert")
     preWord := this.commandsPreWord()
     cx, _ := this.commandsCursor()
     isShowTablesFrames := isShowTablesFrames(
         this.commandsSourceCurrentLine(), cx,
     )
 
-    if isShowTablesFrames && !this.isShowFrames {
+    if isShowTablesFrames  {
         this.framesInitForTables("")
         this.framesPositionX = this.cursorX - 1
         return
     }
+
+    if !this.isShowFrames {
+        Log.Info("init")
+        this.framesInitForCommandsInput(preWord)
+        this.framesPositionX = this.cursorX - 1
+    }
+
 
     if this.e.ch == ' ' && this.isShowFrames {
         this.isShowFrames = false
@@ -1380,7 +1380,11 @@ func (this *Terminal) framesChangeByInsert() {
 
     if this.isShowFrames {
         Log.Infof("preword %s", preWord)
-        this.framesInitForTables(preWord)
+        if this.framesMode == FramesModeTables {
+            this.framesInitForTables(preWord)
+        } else if this.framesMode == FramesModeCommandsInput {
+            this.framesInitForCommandsInput(preWord)
+        }
         return
     }
 
@@ -1390,6 +1394,25 @@ func (this *Terminal) framesChangeByInsert() {
     }
 
 }
+func (this *Terminal) framesReplace() {
+    word := this.frames[this.framesHighlightLinePosition]
+    preWord := this.commandsPreWord()
+    switch this.framesMode {
+        case FramesModeTables: {
+            preWord = strings.ToLower(preWord)
+            if preWord != "from" && preWord != "table" && preWord != "update"{
+                this.commandsDeleteByCtrlW()
+            }
+            word = "`" + word + "`"
+        }
+        case FramesModeCommandsInput: {
+            this.commandsDeleteByCtrlW()
+        }
+    }
+    cx, _ := this.commandsCursor()
+    this.commandsInsert(cx, word)
+
+}
 
 func (this *Terminal) framesInitForTables(filter string) {
     this.isShowFrames = true
@@ -1397,7 +1420,16 @@ func (this *Terminal) framesInitForTables(filter string) {
     this.frames = arrayFilterLikeString(this.tables[1:], filter)
     this.framesHighlightLinePosition = -1
     this.framesShowBegin = 0
+    _, maxLength := arrayMaxLength(this.frames)
+    this.framesWidth = maxLength + 3
+}
 
+func (this *Terminal) framesInitForCommandsInput(filter string) {
+    this.isShowFrames = true
+    this.framesMode = FramesModeCommandsInput
+    this.frames = arrayFilterLikeString(allCmds, strings.ToUpper(filter))
+    this.framesHighlightLinePosition = -1
+    this.framesShowBegin = 0
     _, maxLength := arrayMaxLength(this.frames)
     this.framesWidth = maxLength + 3
 }
