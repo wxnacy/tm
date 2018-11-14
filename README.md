@@ -34,6 +34,9 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 **0.3.2**
 - 更新时间：2018-11-14
 - commands 增加普通输入的提示框
+- commands 增加单个表字段输入的提示框
+- commands 区域优化 sql 方法名的配色
+- tables 区域增加使用 R 刷新表列表和表字段的功能
 
 **0.3.1**
 - 更新时间：2018-11-14

@@ -13,7 +13,7 @@ const (
 
     CmdRed = "into values from where order by desc asc index on add table if column null default limit"
     CmdGreen = "select drop alter insert update delete set explain like and in show create exists not"
-    CmdBlue = "count processlist sum"
+    CmdBlue = "count processlist sum max min"
 )
 
 var allCmd = fmt.Sprintf("%s %s %s",CmdGreen, CmdBlue, CmdRed)
@@ -147,11 +147,6 @@ func (this *Mysql) Close() error{
     return this.db.Close()
 }
 
-func checkErr(err error) {
-    if err != nil {
-        panic(err)
-    }
-}
 
 func IsQuerySql(cmd string) (flag bool) {
     flag = false
@@ -220,3 +215,50 @@ func isHideTablesFrames(cmd string, index int) (flag bool) {
     flag = false
     return
 }
+func queryTableNameBySql(cmd string) (name string) {
+    name = ""
+    cmd = strings.ToLower(cmd)
+    if strings.HasPrefix(cmd, "select") {
+        fromIndex := strings.LastIndex(cmd, "from")
+        if fromIndex < 0 {
+            return
+        }
+        name = strings.Split(strings.Trim(cmd[fromIndex + 4:], " "), " ")[0]
+    }
+    if strings.HasPrefix(cmd, "update") {
+        name = strings.Split(strings.Trim(cmd[6:], " "), " ")[0]
+    }
+
+    name = strings.Trim(name, ";")
+    name = strings.Trim(name, " ")
+    name = strings.Trim(name, "`")
+    return
+}
+func isShowTablesFieldsFrames(cmd string, index int) (flag bool) {
+    flag = false
+    if index < 6 {
+        return
+    }
+    if len(cmd) < index {
+        return
+    }
+    name := queryTableNameBySql(cmd)
+    if name == "" {
+        return
+    }
+    preRune := []rune(cmd)[index-1]
+    // prePreRune := []rune(cmd)[index-2]
+
+    cmd = strings.ToLower(cmd)
+
+    preWord := stringPreWord(cmd, index)
+
+    flag1 := preWord == "select" && preRune == ' '
+    flag2 := strings.HasSuffix(preWord, ",") && preRune == ' '
+    flag3 := preWord == "set" && preRune == ' '
+    flag = flag1 || flag2 || flag3
+
+    // Log.Infof("table %s %s %v", name, preWord, flag)
+    return
+}
+

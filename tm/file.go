@@ -12,6 +12,7 @@ import (
 var TM_DIR = os.Getenv("HOME") + "/.tm"
 var LOG_DIR = TM_DIR + "/logs"
 var CMD_DIR = TM_DIR + "/commands"
+var TABLE_DIR = TM_DIR + "/tables"
 
 func cmdPath(name string) string {
     return fmt.Sprintf("%s/%s", CMD_DIR, name)

@@ -83,7 +83,7 @@ func InitMysql() {
             confData, err := tm.ReadFile(creDir + "/" + action)
             checkErr(err)
             urls := strings.Split(confData, " ")
-            fmt.Println(urls)
+            // fmt.Println(urls)
             user = urls[0]
             passwd = urls[1]
             host = urls[2]
@@ -150,6 +150,34 @@ func onExecCommands(cmds []string) {
 
 }
 
+func onReload(typ tm.ReloadType, v ...interface{}) {
+    begin := time.Now()
+    if typ == tm.ReloadTypeAllTable {
+        tables := QueryTables()
+        t.SetTables(tables)
+
+        var tablesFields = make(map[string][]string, 0)
+
+        for _, d := range tables[1:] {
+
+            res, _ := m.QueryResultArray(fmt.Sprintf("select * from `%s` limit 1;", d))
+            var fields []string
+            fields = res[0]
+            tablesFields[d] = fields
+            tm.Log.Infof("tablesFields %v", fields)
+        }
+
+        t.SetTablesFields(tablesFields)
+        c := fmt.Sprintf(
+            "No Erros; %d rows affected, taking %v",
+            len(tables) - 1,
+            time.Since(begin),
+        )
+        t.SetResultsBottomContent(c)
+
+    }
+}
+
 func main() {
     InitArgs()
     if v {
@@ -167,6 +195,7 @@ func main() {
     tables := QueryTables()
     t.SetTables(tables)
     t.OnExecCommands(onExecCommands)
+    t.OnReload(onReload)
 
     for {
         t.Rendering()

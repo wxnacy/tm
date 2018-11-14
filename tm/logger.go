@@ -16,7 +16,6 @@ func NewLogger() *Logger {
     L := &Logger{}
 
     if l == nil {
-        LogFile("initlogger")
         l = initLogger()
     }
 
@@ -47,8 +46,9 @@ func initLogger() *log.Logger{
 
     path := LOG_DIR + "/tm.log"
     if !IsDir(LOG_DIR) {
-        err := os.MkdirAll(LOG_DIR, os.ModePerm)
-        checkErr(err)
+        os.MkdirAll(LOG_DIR, os.ModePerm)
+        // err := os.MkdirAll(LOG_DIR, os.ModePerm)
+        // checkErr(err)
     }
     file, _ := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
     return log.New(file, "", log.LstdFlags|log.Lshortfile)

@@ -14,6 +14,7 @@ import (
 type Mode uint8
 type Position uint8
 type FramesMode uint8
+type ReloadType uint8
 
 const (
     ModeInsert Mode = iota
@@ -24,8 +25,12 @@ const (
     PositionResults
 
     FramesModeTables FramesMode = iota
+    FramesModeTablesFields
     FramesModeResultsDetail
     FramesModeCommandsInput
+
+    ReloadTypeSingleTable ReloadType = iota
+    ReloadTypeAllTable
 )
 
 type Event struct {
@@ -59,6 +64,7 @@ type Terminal struct {
     isListenKeyBorad bool
 
     tables []string
+    tablesFields map[string][]string
     tablesShowBegin int
     tablesLastCursorY int
 
@@ -93,6 +99,7 @@ type Terminal struct {
     viewCells [][]Cell
     onOpenTable func(name string)
     onExecCommands func(cmds []string)
+    onReload func(typ ReloadType, v ...interface{})
 
 }
 
@@ -148,12 +155,13 @@ func New(name string) (*Terminal, error){
         cells: make([][]Cell, 0),
         viewCells: make([][]Cell, 0),
     }
-    t.initArgs()
+    t.initFields()
 
     return t, nil
 }
 
-func (this *Terminal) initArgs() {
+func (this *Terminal) initFields() {
+
     this.resultsSplitSymbolPosition = initResultsSplitSymbolPosition(this.height)
 
     cmd_file := cmdPath(this.name)
@@ -161,6 +169,15 @@ func (this *Terminal) initArgs() {
         data, err := ReadFile(cmd_file)
         checkErr(err)
         this.commandsSources = strings.Split(data, "\n")
+    }
+
+    tf_file := TABLE_DIR + "/tablesfields_" + this.name
+    if IsFile(tf_file) {
+
+        data, err := ReadFile(tf_file)
+        checkErr(err)
+        err = json.Unmarshal([]byte(data), &this.tablesFields)
+        checkErr(err)
     }
 }
 
@@ -171,6 +188,9 @@ func (this *Terminal) OnOpenTable(onOpenTable func(name string) ) {
 func (this *Terminal) OnExecCommands(onExecCommands func(cmds []string)) {
     this.onExecCommands = onExecCommands
 }
+func (this *Terminal) OnReload(onReload func(typ ReloadType, v ...interface{})) {
+    this.onReload = onReload
+}
 
 func (this *Terminal) IsListenKeyBorad() bool {
     return this.isListenKeyBorad
@@ -178,6 +198,14 @@ func (this *Terminal) IsListenKeyBorad() bool {
 
 func (this *Terminal) SetTables(tables []string) {
     this.tables = tables
+}
+
+func (this *Terminal) SetTablesFields(tablesFields map[string][]string) {
+    this.tablesFields = tablesFields
+
+    bytes, err := json.Marshal(this.tablesFields)
+    checkErr(err)
+    SaveFile(TABLE_DIR + "/tablesfields_" + this.name, string(bytes))
 }
 
 func (this *Terminal) ClearResults() {
@@ -761,6 +789,12 @@ func (this *Terminal) listenTables() {
             this.isListenKeyBorad = true
 
         }
+        case 'R': {
+            this.ClearResults()
+            this.SetResultsBottomContent("Waiting")
+            this.Rendering()
+            this.onReload(ReloadTypeAllTable)
+        }
     }
 
 }
@@ -952,10 +986,11 @@ func (this *Terminal) listenCommandsNormal() {
     e := this.e.e
 
     // switch e.Key {
-        // case termbox.KeyEsc: {
+        // case termbox.KeyCtrlR: {
             // os.Exit(0)
         // }
     // }
+
     if e.Ch <= 0 {
         return
     }
@@ -1332,42 +1367,36 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
 }
 
 func (this *Terminal) framesChangeByBackspace() {
-    preWord := this.commandsPreWord()
-    cx, _ := this.commandsCursor()
-    isHideTablesFrames := isHideTablesFrames(
-        this.commandsSourceCurrentLine(), cx,
-    )
-    Log.Info("isShowFrames ", this.isShowFrames)
-    if this.isShowFrames {
-        if isHideTablesFrames {
-            this.isShowFrames = false
-            return
-        }
-
-        filter := preWord
-        if this.commandsPreRune() == ' ' {
-            filter = ""
-        }
-        this.framesInitForTables(filter)
-    }
+    this.framesChangeByPreWord()
 
 }
 func (this *Terminal) framesChangeByInsert() {
     Log.Info("insert")
     preWord := this.commandsPreWord()
     cx, _ := this.commandsCursor()
+    name := queryTableNameBySql(this.commandsSourceCurrentLine())
     isShowTablesFrames := isShowTablesFrames(
         this.commandsSourceCurrentLine(), cx,
     )
 
     if isShowTablesFrames  {
+        Log.Info("isShowTablesFrames ", isShowTablesFrames)
         this.framesInitForTables("")
         this.framesPositionX = this.cursorX - 1
         return
     }
 
+    isShowTablesFieldsFrames := isShowTablesFieldsFrames(
+        this.commandsSourceCurrentLine(), cx,
+    )
+    if isShowTablesFieldsFrames {
+        Log.Info("isShowTablesFieldsFrames ", isShowTablesFieldsFrames)
+        this.framesInitForTablesFields(name, "")
+        this.framesPositionX = this.cursorX - 1
+        return
+    }
+
     if !this.isShowFrames {
-        Log.Info("init")
         this.framesInitForCommandsInput(preWord)
         this.framesPositionX = this.cursorX - 1
     }
@@ -1377,16 +1406,7 @@ func (this *Terminal) framesChangeByInsert() {
         this.isShowFrames = false
         return
     }
-
-    if this.isShowFrames {
-        Log.Infof("preword %s", preWord)
-        if this.framesMode == FramesModeTables {
-            this.framesInitForTables(preWord)
-        } else if this.framesMode == FramesModeCommandsInput {
-            this.framesInitForCommandsInput(preWord)
-        }
-        return
-    }
+    this.framesChangeByPreWord()
 
     if this.e.ch == ';' && this.isShowFrames {
         this.isShowFrames = false
@@ -1394,12 +1414,37 @@ func (this *Terminal) framesChangeByInsert() {
     }
 
 }
-func (this *Terminal) framesReplace() {
-    word := this.frames[this.framesHighlightLinePosition]
+
+func (this *Terminal) framesChangeByPreWord() {
     preWord := this.commandsPreWord()
+    name := queryTableNameBySql(this.commandsSourceCurrentLine())
+    filter := preWord
+    if this.commandsPreRune() == ' ' {
+        filter = ""
+    }
+    if this.isShowFrames {
+        Log.Infof("preword %s", preWord)
+        switch this.framesMode {
+            case FramesModeTables: {
+                this.framesInitForTables(filter)
+            }
+            case FramesModeCommandsInput: {
+                this.framesInitForCommandsInput(filter)
+            }
+            case FramesModeTablesFields: {
+                this.framesInitForTablesFields(name, filter)
+            }
+        }
+    }
+}
+func (this *Terminal) framesReplace() {
+    if len(this.frames) == 0 {
+        return
+    }
+    word := this.frames[this.framesHighlightLinePosition]
+    preWord := strings.ToLower(this.commandsPreWord())
     switch this.framesMode {
         case FramesModeTables: {
-            preWord = strings.ToLower(preWord)
             if preWord != "from" && preWord != "table" && preWord != "update"{
                 this.commandsDeleteByCtrlW()
             }
@@ -1407,6 +1452,13 @@ func (this *Terminal) framesReplace() {
         }
         case FramesModeCommandsInput: {
             this.commandsDeleteByCtrlW()
+        }
+        case FramesModeTablesFields: {
+
+            word = "`" + word + "`"
+            if preWord != "select" && preWord != "set" && !strings.HasSuffix(preWord, ",") {
+                this.commandsDeleteByCtrlW()
+            }
         }
     }
     cx, _ := this.commandsCursor()
@@ -1418,6 +1470,21 @@ func (this *Terminal) framesInitForTables(filter string) {
     this.isShowFrames = true
     this.framesMode = FramesModeTables
     this.frames = arrayFilterLikeString(this.tables[1:], filter)
+    this.framesHighlightLinePosition = -1
+    this.framesShowBegin = 0
+    _, maxLength := arrayMaxLength(this.frames)
+    this.framesWidth = maxLength + 3
+}
+
+func (this *Terminal) framesInitForTablesFields(tableName, filter string) {
+    this.isShowFrames = true
+    this.framesMode = FramesModeTablesFields
+    fields := this.tablesFields[tableName]
+    this.frames = arrayFilterLikeString(fields, filter)
+    Log.Infof(
+        "tableName %s filter %s fields %v",
+        tableName, filter, fields,
+    )
     this.framesHighlightLinePosition = -1
     this.framesShowBegin = 0
     _, maxLength := arrayMaxLength(this.frames)
@@ -1840,7 +1907,7 @@ func (t *Terminal) PollEvent() termbox.Event{
                 t.height = e.Height
                 t.tablesShowBegin = 0
                 t.tablesLastCursorY = 1
-                t.initArgs()
+                t.initFields()
                 t.moveCursorToTables()
                 t.Rendering()
         }

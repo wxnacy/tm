@@ -42,6 +42,10 @@ func commandToCells(s string, bg termbox.Attribute) []Cell {
             compareWord = compareWord[0:len(compareWord)- 1]
         }
 
+        if ci := strings.Index(compareWord, "("); ci > 0 {
+            compareWord = compareWord[0:ci]
+        }
+
         for _, d := range chs {
             fg := termbox.ColorDefault
             if inArray(compareWord, strings.Split(CmdGreen, " ")) > -1 {
@@ -63,7 +67,7 @@ func commandToCells(s string, bg termbox.Attribute) []Cell {
 
             if strings.Contains(s, "-- ") {
                 fg = termbox.ColorCyan
-            } 
+            }
             cells = append(cells, Cell{Ch: d, Fg: fg, Bg: bg})
         }
 
@@ -387,4 +391,11 @@ func arrayFilterLikeString(array []string, s string) []string {
     }
     return newArr
 
+}
+
+func checkErr(err error) {
+    if err != nil {
+        Log.Error(err)
+        panic(err)
+    }
 }
