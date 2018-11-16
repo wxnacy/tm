@@ -1367,6 +1367,10 @@ func (this *Terminal) commandsMaxShowBegin() (int) {
 }
 
 func (this *Terminal) framesChangeByBackspace() {
+    if this.cursorX <= this.framesPositionX {
+        this.isShowFrames = false
+
+    }
     this.framesChangeByPreWord()
 
 }
@@ -1445,7 +1449,7 @@ func (this *Terminal) framesReplace() {
     preWord := strings.ToLower(this.commandsPreWord())
     switch this.framesMode {
         case FramesModeTables: {
-            if preWord != "from" && preWord != "table" && preWord != "update"{
+            if preWord != "from" && preWord != "table" && preWord != "update" && !strings.HasSuffix(preWord, ",") {
                 this.commandsDeleteByCtrlW()
             }
             word = "`" + word + "`"
@@ -1456,7 +1460,7 @@ func (this *Terminal) framesReplace() {
         case FramesModeTablesFields: {
 
             word = "`" + word + "`"
-            if preWord != "select" && preWord != "set" && !strings.HasSuffix(preWord, ",") {
+            if preWord != "select" && preWord != "and" && preWord != "set" && preWord != "where" && !strings.HasSuffix(preWord, ",") && !strings.HasSuffix(preWord, ".") {
                 this.commandsDeleteByCtrlW()
             }
         }
@@ -1480,6 +1484,7 @@ func (this *Terminal) framesInitForTablesFields(tableName, filter string) {
     this.isShowFrames = true
     this.framesMode = FramesModeTablesFields
     fields := this.tablesFields[tableName]
+    fields = append(fields, tableName)
     this.frames = arrayFilterLikeString(fields, filter)
     Log.Infof(
         "tableName %s filter %s fields %v",

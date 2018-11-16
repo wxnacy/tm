@@ -176,6 +176,17 @@ func isShowTablesFrames(cmd string, index int) (flag bool) {
     flag1 := preWord == "from" || preWord == "update" || preWord == "table"
     flag2 := preRune == ' ' && prePreRune != ' '
     flag = flag1 && flag2
+    if flag {
+        return
+    }
+
+    indexRes := sqlKeyWordIndexs(cmd)
+
+    flag = index > indexRes["from"] && preRune == ' ' && prePreRune == ','
+    if flag {
+        return
+    }
+
     return
 }
 
@@ -230,6 +241,34 @@ func queryTableNameBySql(cmd string) (name string) {
     }
 
     name = strings.Trim(name, ";")
+    name = strings.Trim(name, ",")
+    name = strings.Trim(name, " ")
+    name = strings.Trim(name, "`")
+    return
+}
+func queryTableNameBySqlIndex(cmd string, index int) (name string) {
+    name = ""
+    cmd = strings.ToLower(cmd)
+    preWord := stringPreWord(cmd, index)
+    if strings.HasSuffix(preWord, ".") {
+        preWord = strings.Trim(preWord, ".")
+        preWord = strings.Trim(preWord, "`")
+        name = preWord
+        return
+    }
+    if strings.HasPrefix(cmd, "select") {
+        fromIndex := strings.LastIndex(cmd, "from")
+        if fromIndex < 0 {
+            return
+        }
+        name = strings.Split(strings.Trim(cmd[fromIndex + 4:], " "), " ")[0]
+    }
+    if strings.HasPrefix(cmd, "update") {
+        name = strings.Split(strings.Trim(cmd[6:], " "), " ")[0]
+    }
+
+    name = strings.Trim(name, ";")
+    name = strings.Trim(name, ",")
     name = strings.Trim(name, " ")
     name = strings.Trim(name, "`")
     return
@@ -256,9 +295,26 @@ func isShowTablesFieldsFrames(cmd string, index int) (flag bool) {
     flag1 := preWord == "select" && preRune == ' '
     flag2 := strings.HasSuffix(preWord, ",") && preRune == ' '
     flag3 := preWord == "set" && preRune == ' '
-    flag = flag1 || flag2 || flag3
+    flag4 := preWord == "where" && preRune == ' '
+    flag5 := preWord == "and" && preRune == ' '
+    flag6 := preRune == '.'
+    flag = flag1 || flag2 || flag3 || flag4 || flag5 || flag6
 
     // Log.Infof("table %s %s %v", name, preWord, flag)
     return
 }
 
+
+func sqlKeyWordIndexs(cmd string) (res map[string]int) {
+    res = make(map[string]int, 0)
+    cmd = strings.ToLower(cmd)
+
+    res["select"] = strings.Index(cmd, "select")
+    res["update"] = strings.Index(cmd, "update")
+    res["delete"] = strings.Index(cmd, "delete")
+    res["from"] = strings.Index(cmd, "from")
+    res["where"] = strings.Index(cmd, "where")
+    res["set"] = strings.Index(cmd, "set")
+
+    return
+}

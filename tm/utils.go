@@ -206,18 +206,37 @@ func stringPreWordBegin(s string, index int) int {
 
     if index >= len(s) {
         splits := strings.Split(newS, " ")
-        return strings.LastIndex(s, splits[len(splits) - 1])
+        lastWord := splits[len(splits) - 1]
+        hasPoint := strings.Index(lastWord, ".")
+        if hasPoint > 0 && hasPoint < len(lastWord) - 1 {
+            splits = strings.Split(lastWord, ".")
+            lastWord = splits[len(splits) - 1]
+        }
+        return strings.LastIndex(s, lastWord)
     }
 
     splits := strings.Split(strings.Trim(s[0:index], " "), " ")
 
     if len(splits) == 1 {
+        lastWord := splits[len(splits) - 1]
+        hasPoint := strings.Index(lastWord, ".")
+        if hasPoint > 0 && hasPoint < len(lastWord) - 1 {
+            splits = strings.Split(lastWord, ".")
+            lastWord = splits[len(splits) - 1]
+            return strings.LastIndex(s, lastWord)
+        }
         return 0
     }
 
     indexStr := splits[len(splits) - 1]
     if indexStr == "" {
         indexStr = splits[len(splits) - 2]
+    }
+
+    hasPoint := strings.Index(indexStr, ".")
+    if hasPoint > 0 && hasPoint < len(indexStr) - 1 {
+        splits := strings.Split(indexStr, ".")
+        indexStr = splits[len(splits) - 1]
     }
 
     return strings.LastIndex(s[0:index], indexStr)

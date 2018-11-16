@@ -4,23 +4,6 @@ import (
     "testing"
 )
 
-
-// func TestQueryResultArray(t *testing.T) {
-
-    // m, err := NewMysql("root", )
-    // if err != nil {
-        // panic(err)
-    // }
-    // defer m.Close()
-    // results, err := m.QueryResultArray("select * from user")
-    // if err != nil {
-        // t.Error(err)
-    // } else {
-        // t.Log(results)
-    // }
-
-// }
-
 func TestIsQuerySql(t *testing.T) {
     var flag bool
     flag = IsQuerySql("select * ")
@@ -79,6 +62,11 @@ func TestIsShowTablesFrames(t *testing.T) {
     if !flag {
         t.Error(flag, " is error")
     }
+
+    flag = isShowTablesFrames("from shop, ", 6)
+    if !flag {
+        t.Error(flag, " is error")
+    }
 }
 
 func TestIsHideTablesFrames(t *testing.T) {
@@ -119,5 +107,26 @@ func TestIsHideTablesFrames(t *testing.T) {
     flag = isHideTablesFrames("table ", 6)
     if flag {
         t.Error(flag, " is error")
+    }
+}
+
+func TestSqlKeyWordIndexs(t *testing.T) {
+
+    res := sqlKeyWordIndexs("select * from shop where ")
+    rightFlag := res["select"] == 0 && res["from"] == 9 && res["where"] == 19
+    if !rightFlag {
+        t.Error(res, " is error")
+    }
+
+    res = sqlKeyWordIndexs("update shop set where ")
+    rightFlag = res["update"] == 0 && res["set"] == 12 && res["where"] == 16
+    if !rightFlag {
+        t.Error(res, " is error")
+    }
+
+    res = sqlKeyWordIndexs("delete from shop where ")
+    rightFlag = res["delete"] == 0 && res["from"] == 7 && res["where"] == 17
+    if !rightFlag {
+        t.Error(res, " is error")
     }
 }

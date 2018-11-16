@@ -324,6 +324,21 @@ func TestStringPreWordBegin(t *testing.T) {
     if i != 0 {
         t.Error(i, "is error")
     }
+    s = "select.sh   * from user"
+    i = stringPreWordBegin(s, 9)
+    if i != 7 {
+        t.Error(i, "is error")
+    }
+    s = "select.sh"
+    i = stringPreWordBegin(s, 9)
+    if i != 7 {
+        t.Error(i, "is error")
+    }
+    s = "ss select.sh   * from user"
+    i = stringPreWordBegin(s, 13)
+    if i != 10 {
+        t.Error(i, "is error")
+    }
 }
 
 func TestStringPreWord(t *testing.T) {
@@ -370,6 +385,11 @@ func TestStringPreWord(t *testing.T) {
         t.Error(i, "is error")
     }
     s = "select user  "
+    i = stringPreWord(s, 14)
+    if i != "user" {
+        t.Error(i, "is error")
+    }
+    s = "select.user  "
     i = stringPreWord(s, 14)
     if i != "user" {
         t.Error(i, "is error")
