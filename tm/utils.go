@@ -152,7 +152,21 @@ func stringNextWordBegin(s string, index int) (res int) {
         return
     }
 
-    res = index + strings.Index(nextStr, splits[1])
+    chs := []rune(s)
+    for i := 0; i < len(chs); i++ {
+
+        if i > index {
+            if chs[i] != ' ' && (chs[i - 1] == ' ' || chs[i - 1] == '.') {
+                res = i
+                return
+            }
+
+        }
+
+    }
+
+
+    // res = index + strings.Index(nextStr, splits[1])
     return
 }
 
