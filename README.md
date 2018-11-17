@@ -36,6 +36,7 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 - commands 优化复杂 sql 的提示框
 - commands 优化 sql 的配色
 - commands 优化跳转下一个单词开始位置的 bug
+- commands 修复了最后一样黏贴文本光标没有上移的 bug
 
 **0.3.2**
 - 更新时间：2018-11-14

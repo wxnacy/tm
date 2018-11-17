@@ -400,9 +400,9 @@ func (this *Terminal) resetResults() {
             chsIndex := x + this.resultsLeftShowBegin
             if oy + 1 < this.height && ox + 1 < this.width &&
             chsIndex < len(chs){
-
+                c := chs[chsIndex]
                 this.cells[oy][ox] = Cell{
-                    Ch: chs[chsIndex],
+                    Ch: c,
                     Fg: rfg,
                     Bg: rbg,
                 }
@@ -1121,7 +1121,13 @@ func (this *Terminal) listenCommandsNormal() {
                 this.commandsSourceCurrentLinePosition() + 1,
                 this.commandsClipboard[0],
             )
-            this.cursorY++
+            maxCY := this.commandsMaxCursorY()
+            if this.cursorY == maxCY {
+                this.commandsShowBegin++
+            } else {
+
+                this.cursorY++
+            }
         }
         case 'w': {
             nowX, _ := this.commandsCursor()
