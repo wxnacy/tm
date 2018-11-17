@@ -1448,7 +1448,7 @@ func (this *Terminal) framesChangeByPreWord() {
     }
 }
 func (this *Terminal) framesReplace() {
-    if len(this.frames) == 0 {
+    if len(this.frames) == 0 || this.framesMode == FramesModeResultsDetail {
         return
     }
     word := this.frames[this.framesHighlightLinePosition]
