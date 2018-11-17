@@ -2,6 +2,7 @@ package tm
 
 import (
     "testing"
+    "strings"
 )
 
 func TestIsQuerySql(t *testing.T) {
@@ -63,7 +64,7 @@ func TestIsShowTablesFrames(t *testing.T) {
         t.Error(flag, " is error")
     }
 
-    flag = isShowTablesFrames("from shop, ", 6)
+    flag = isShowTablesFrames("from shop, ", 11)
     if !flag {
         t.Error(flag, " is error")
     }
@@ -129,4 +130,39 @@ func TestSqlKeyWordIndexs(t *testing.T) {
     if !rightFlag {
         t.Error(res, " is error")
     }
+}
+func TestQueryTableNamesBySqlIndex(t *testing.T) {
+
+    var names []string
+
+    names = queryTableNamesBySqlIndex("select * from `shop`, 'shop_admin', 'shop_wx'", 10)
+    if strings.Join(names, "") != "shopshop_adminshop_wx"{
+        Log.Error(names, " is Error")
+    }
+
+    names = queryTableNamesBySqlIndex("update shop set ", 10)
+    if strings.Join(names, "") != "shop"{
+        Log.Error(names, " is Error")
+    }
+
+    names = queryTableNamesBySqlIndex("delete from shop where", 10)
+    if strings.Join(names, "") != "shop"{
+        Log.Error(names, " is Error")
+    }
+
+    names = queryTableNamesBySqlIndex("select * from ad, shop where shop.", 34)
+    if strings.Join(names, "") != "shop"{
+        Log.Error(names, " is Error")
+    }
+
+    names = queryTableNamesBySqlIndex("select * from ad, shop where shop.id", 35)
+    if strings.Join(names, "") != "shop"{
+        Log.Error(names, " is Error")
+    }
+
+    names = queryTableNamesBySqlIndex("select * from ad, shop where shop.id = ad.shop_id", 43)
+    if strings.Join(names, "") != "ad"{
+        Log.Error(names, " is Error")
+    }
+
 }

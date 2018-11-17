@@ -225,6 +225,25 @@ func TestStringNextWordBegin(t *testing.T) {
     if i != 25 {
         t.Error(i, "is error")
     }
+
+    s = "= = ="
+    i = stringNextWordBegin(s, 2)
+    if i != 4 {
+        t.Error(i, "is error")
+    }
+
+    s = "=.s ="
+    i = stringNextWordBegin(s, 0)
+    if i != 2 {
+        t.Error(i, "is error")
+    }
+
+    s = "=  ="
+    i = stringNextWordBegin(s, 1)
+    if i != 3 {
+        t.Error(i, "is error")
+    }
+
 }
 
 func TestStringNextWordEnd(t *testing.T) {

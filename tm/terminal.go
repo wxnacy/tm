@@ -1378,7 +1378,7 @@ func (this *Terminal) framesChangeByInsert() {
     Log.Info("insert")
     preWord := this.commandsPreWord()
     cx, _ := this.commandsCursor()
-    name := queryTableNameBySql(this.commandsSourceCurrentLine())
+    // name := queryTableNameBySql(this.commandsSourceCurrentLine())
     isShowTablesFrames := isShowTablesFrames(
         this.commandsSourceCurrentLine(), cx,
     )
@@ -1395,7 +1395,7 @@ func (this *Terminal) framesChangeByInsert() {
     )
     if isShowTablesFieldsFrames {
         Log.Info("isShowTablesFieldsFrames ", isShowTablesFieldsFrames)
-        this.framesInitForTablesFields(name, "")
+        this.framesInitForTablesFields("")
         this.framesPositionX = this.cursorX - 1
         return
     }
@@ -1421,7 +1421,7 @@ func (this *Terminal) framesChangeByInsert() {
 
 func (this *Terminal) framesChangeByPreWord() {
     preWord := this.commandsPreWord()
-    name := queryTableNameBySql(this.commandsSourceCurrentLine())
+    // name := queryTableNameBySql(this.commandsSourceCurrentLine())
     filter := preWord
     if this.commandsPreRune() == ' ' {
         filter = ""
@@ -1436,7 +1436,7 @@ func (this *Terminal) framesChangeByPreWord() {
                 this.framesInitForCommandsInput(filter)
             }
             case FramesModeTablesFields: {
-                this.framesInitForTablesFields(name, filter)
+                this.framesInitForTablesFields(filter)
             }
         }
     }
@@ -1480,11 +1480,14 @@ func (this *Terminal) framesInitForTables(filter string) {
     this.framesWidth = maxLength + 3
 }
 
-func (this *Terminal) framesInitForTablesFields(tableName, filter string) {
+func (this *Terminal) framesInitForTablesFields(filter string) {
     this.isShowFrames = true
     this.framesMode = FramesModeTablesFields
+    cx, _ := this.commandsCursor()
+    tableNames := queryTableNamesBySqlIndex(this.commandsSourceCurrentLine(), cx)
+    tableName := tableNames[0]
     fields := this.tablesFields[tableName]
-    fields = append(fields, tableName)
+    fields = append(fields, tableNames...)
     this.frames = arrayFilterLikeString(fields, filter)
     Log.Infof(
         "tableName %s filter %s fields %v",

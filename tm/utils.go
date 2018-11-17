@@ -141,15 +141,19 @@ func deleteFromStringArray(arr []string, index, length int) []string {
     }
 }
 
-func stringNextWordBegin(s string, index int) int {
+func stringNextWordBegin(s string, index int) (res int) {
+    res = index
     if index >= len(s) {
-        return index
+        return
     }
-    splits := strings.Split(s[index:], " ")
+    nextStr := s[index:]
+    splits := strings.Split(nextStr, " ")
     if len(splits) <= 1 {
-        return index
+        return
     }
-    return strings.Index(s, splits[1])
+
+    res = index + strings.Index(nextStr, splits[1])
+    return
 }
 
 func stringNextWordEnd(s string, index int) int {
@@ -398,13 +402,18 @@ func arrayFilterLikeString(array []string, s string) []string {
     }
     newArr := make([]string, 0)
 
-    for i := len(s); i > 0; i-- {
-        compareWord := s[0:i]
-        // Log.Info(compareWord)
-        for _, d := range array {
-            if strings.HasPrefix(d, compareWord) && inArray(d, newArr) == -1 {
-                newArr = append(newArr, d)
-            }
+    // for i := len(s); i > 0; i-- {
+        // compareWord := s[0:i]
+        // // Log.Info(compareWord)
+        // for _, d := range array {
+            // if strings.HasPrefix(d, compareWord) && inArray(d, newArr) == -1 {
+                // newArr = append(newArr, d)
+            // }
+        // }
+    // }
+    for _, d := range array {
+        if strings.HasPrefix(d, s) && inArray(d, newArr) == -1 {
+            newArr = append(newArr, d)
         }
     }
 

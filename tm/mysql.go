@@ -11,7 +11,7 @@ const (
     querySqlBegin string = "select show"
     execSqlBegin = "update delete drop create"
 
-    CmdRed = "into values from where order by desc asc index on add table if column null default limit"
+    CmdRed = "into values from where order by desc asc index on add table if column null default limit as"
     CmdGreen = "select drop alter insert update delete set explain like and in show create exists not"
     CmdBlue = "count processlist sum max min"
 )
@@ -246,6 +246,62 @@ func queryTableNameBySql(cmd string) (name string) {
     name = strings.Trim(name, "`")
     return
 }
+func queryTableNamesBySqlIndex(cmd string, index int) (names []string) {
+    names = make([]string, 0)
+    name := ""
+    cmd = strings.ToLower(cmd)
+    preWord := stringPreWord(cmd, index)
+    if strings.HasSuffix(preWord, ".") {
+        preWord = strings.Trim(preWord, ".")
+        preWord = strings.Trim(preWord, "`")
+        name = preWord
+        names = append(names, name)
+        return
+    }
+    preWord = stringPreWord(cmd, index - len(preWord))
+    if strings.HasSuffix(preWord, ".") {
+        preWord = strings.Trim(preWord, ".")
+        preWord = strings.Trim(preWord, "`")
+        name = preWord
+        names = append(names, name)
+        return
+    }
+    if strings.HasPrefix(cmd, "select") {
+        indexs := sqlKeyWordIndexs(cmd)
+        fromIndex := indexs["from"]
+        if fromIndex < 0 {
+            return
+        }
+        endIndex := len(cmd)
+        if indexs["where"] > fromIndex {
+            endIndex = indexs["where"]
+        }
+        if indexs["order"] > fromIndex {
+            endIndex = indexs["order"]
+        }
+        if indexs["group"] > fromIndex {
+            endIndex = indexs["group"]
+        }
+        if indexs["limit"] > fromIndex {
+            endIndex = indexs["limit"]
+        }
+        nameStr := strings.Trim(cmd[fromIndex + 4:endIndex], " ")
+        for _, d := range strings.Split(nameStr, ",") {
+            names = append(names, strings.Trim(strings.Trim(d, " "), "``"))
+        }
+        return
+    }
+    if strings.HasPrefix(cmd, "update") {
+        name = strings.Split(strings.Trim(cmd[6:], " "), " ")[0]
+    }
+
+    name = strings.Trim(name, ";")
+    name = strings.Trim(name, ",")
+    name = strings.Trim(name, " ")
+    name = strings.Trim(name, "`")
+    names = append(names, name)
+    return
+}
 func queryTableNameBySqlIndex(cmd string, index int) (name string) {
     name = ""
     cmd = strings.ToLower(cmd)
@@ -286,7 +342,7 @@ func isShowTablesFieldsFrames(cmd string, index int) (flag bool) {
         return
     }
     preRune := []rune(cmd)[index-1]
-    // prePreRune := []rune(cmd)[index-2]
+    prePreRune := []rune(cmd)[index-2]
 
     cmd = strings.ToLower(cmd)
 
@@ -298,7 +354,8 @@ func isShowTablesFieldsFrames(cmd string, index int) (flag bool) {
     flag4 := preWord == "where" && preRune == ' '
     flag5 := preWord == "and" && preRune == ' '
     flag6 := preRune == '.'
-    flag = flag1 || flag2 || flag3 || flag4 || flag5 || flag6
+    flag7 := preRune == ' ' && prePreRune == '='
+    flag = flag1 || flag2 || flag3 || flag4 || flag5 || flag6 || flag7
 
     // Log.Infof("table %s %s %v", name, preWord, flag)
     return
@@ -314,6 +371,9 @@ func sqlKeyWordIndexs(cmd string) (res map[string]int) {
     res["delete"] = strings.Index(cmd, "delete")
     res["from"] = strings.Index(cmd, "from")
     res["where"] = strings.Index(cmd, "where")
+    res["order"] = strings.Index(cmd, "order")
+    res["group"] = strings.Index(cmd, "group")
+    res["limit"] = strings.Index(cmd, "limit")
     res["set"] = strings.Index(cmd, "set")
 
     return
