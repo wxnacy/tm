@@ -31,6 +31,10 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 
 ## 更新日志
 
+**0.3.4**
+- 更新时间：2018-11-18
+- 优化字符串模糊搜索
+
 **0.3.3**
 - 更新时间：2018-11-17
 - commands 优化复杂 sql 的提示框

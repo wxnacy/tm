@@ -5,6 +5,7 @@ import (
     "github.com/nsf/termbox-go"
     "time"
     "reflect"
+    "github.com/schollz/closestmatch"
 )
 
 func cellsToString(cells []Cell) string {
@@ -410,6 +411,17 @@ func arrayMaxLength(array []string) (s string, length int) {
 }
 
 func arrayFilterLikeString(array []string, s string) []string {
+
+    // Choose a set of bag sizes, more is more accurate but slower
+    bagSizes := []int{2}
+
+    // Create a closestmatch object
+    cm := closestmatch.New(array, bagSizes)
+
+    res := cm.ClosestN(s, 3)
+    Log.Info(array, s, res)
+
+    return res
     begin := time.Now()
     if s == "" {
         return array

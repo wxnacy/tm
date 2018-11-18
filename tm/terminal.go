@@ -20,6 +20,8 @@ const (
     ModeInsert Mode = iota
     ModeNormal
     ModeCommand
+    ModeVisualLine
+
     PositionTables Position = iota
     PositionCommands
     PositionResults
@@ -86,6 +88,7 @@ type Terminal struct {
     commandsClipboard []string
     commandsWidth, commandsHeight int
     commandsLastCursorX, commandsLastCursorY int
+    commandsVisualLineBegin, commandsVisualLineEnd int
 
     isShowFrames bool
     frames []string
@@ -455,39 +458,16 @@ func (this *Terminal) resetCommands() {
         if this.isCursorInCommands() && i == this.cursorY{
             bg = termbox.ColorBlack
         }
+        if index >= this.commandsVisualLineBegin &&
+        index <= this.commandsVisualLineEnd &&
+        this.commandsMode == ModeVisualLine {
+            bg = termbox.ColorWhite
+        }
         this.cells[i] = cellsReplace(
             this.cells[i],
             this.tableSplitSymbolPosition + 1,
             commandToCells(this.commands[index], bg),
         )
-        // line := []rune(this.commands[index])
-        // for j := 0; j < len(line); j++ {
-            // cellsX := this.tableSplitSymbolPosition + j + 1
-            // fg := termbox.ColorDefault
-            // bg := termbox.ColorDefault
-            // if cellsX < minCX  {
-                // bg = termbox.ColorBlack
-            // }
-
-            // if this.isCursorInCommands() && i == this.cursorY{
-
-                // if cellsX >= minCX{
-                    // bg = termbox.ColorBlack
-                // } else {
-                    // bg = termbox.ColorDefault
-                // }
-            // }
-
-            // if cellsX < len(this.cells[i]) {
-                // this.cells[i][cellsX] = Cell{
-                    // Ch: line[j],
-                    // Fg: fg,
-                    // Bg: bg,
-                // }
-            // }
-
-
-        // }
 
     }
 }
@@ -512,6 +492,7 @@ func (this *Terminal) resetField() {
     this.commandsHeight = this.resultsSplitSymbolPosition - 1
 
     this.framesHeight = min(this.height / 2 - 1, len(this.frames))
+
 }
 
 func (this *Terminal) resetCursor() {
@@ -867,6 +848,9 @@ func (this *Terminal) listenCommands() {
     }
 
     switch this.commandsMode {
+        case ModeVisualLine: {
+            this.listenCommandsNormal()
+        }
         case ModeNormal: {
             this.listenCommandsNormal()
         }
@@ -876,13 +860,10 @@ func (this *Terminal) listenCommands() {
         case ModeCommand: {
             switch e.Key {
                 case termbox.KeyBackspace2: {
-                    // cmd := this.commandsSources[this.cursorY]
                     x, _ := this.commandsCursor()
                     if x + this.commandsLineNumWidth() - 1 <= 0 {
                         return
                     }
-                    // cmd = deleteFromString(cmd, x - 1, 1)
-                    // this.commandsSources[this.cursorY] = cmd
 
                     this.commandsBottomContent = deleteFromString(
                         this.commandsBottomContent,
@@ -985,11 +966,12 @@ func (this *Terminal) listenCommandsInsert() {
 func (this *Terminal) listenCommandsNormal() {
     e := this.e.e
 
-    // switch e.Key {
-        // case termbox.KeyCtrlR: {
-            // os.Exit(0)
-        // }
-    // }
+    switch this.e.key {
+        case termbox.KeyEsc: {
+            this.commandsMode = ModeNormal
+            this.commandsBottomContent = ""
+        }
+    }
 
     if e.Ch <= 0 {
         return
@@ -1080,9 +1062,33 @@ func (this *Terminal) listenCommandsNormal() {
             this.moveCursor(1, 0)
         }
         case 'j': {
+            // _, cy := this.commandsCursor()
+            currentLine := this.commandsSourceCurrentLinePosition()
+            if this.commandsMode == ModeVisualLine {
+                if currentLine == this.commandsVisualLineEnd {
+                    if this.commandsVisualLineEnd < len(this.commands) - 1 {
+                        this.commandsVisualLineEnd++
+                    }
+                } else {
+                    this.commandsVisualLineBegin++
+                }
+
+            }
             this.moveCursor(0, 1)
         }
         case 'k': {
+            currentLine := this.commandsSourceCurrentLinePosition()
+            // maxCY := this.commandsMaxCursorY()
+            if this.commandsMode == ModeVisualLine {
+                if currentLine == this.commandsVisualLineBegin {
+                    if this.commandsVisualLineBegin > 0 {
+                        this.commandsVisualLineBegin--
+                    }
+                } else {
+                    this.commandsVisualLineEnd--
+                }
+
+            }
             this.moveCursor(0, -1)
         }
         case 'g': {
@@ -1152,6 +1158,13 @@ func (this *Terminal) listenCommandsNormal() {
             )
             minCX, _ := this.commandsMinCursor()
             this.cursorX = cx + minCX
+        }
+        case 'V': {
+            this.commandsBottomContent = "-- VISUAL LINE --"
+            this.commandsMode = ModeVisualLine
+            currentLine := this.commandsSourceCurrentLinePosition()
+            this.commandsVisualLineBegin = currentLine
+            this.commandsVisualLineEnd = currentLine
         }
     }
 }
@@ -1479,7 +1492,7 @@ func (this *Terminal) framesReplace() {
 func (this *Terminal) framesInitForTables(filter string) {
     this.isShowFrames = true
     this.framesMode = FramesModeTables
-    this.frames = arrayFilterLikeString(this.tables[1:], filter)
+    this.frames = FilterStrings(this.tables[1:], filter)
     this.framesHighlightLinePosition = -1
     this.framesShowBegin = 0
     _, maxLength := arrayMaxLength(this.frames)
@@ -1494,7 +1507,7 @@ func (this *Terminal) framesInitForTablesFields(filter string) {
     tableName := tableNames[0]
     fields := this.tablesFields[tableName]
     fields = append(fields, tableNames...)
-    this.frames = arrayFilterLikeString(fields, filter)
+    this.frames = FilterStrings(fields, filter)
     Log.Infof(
         "tableName %s filter %s fields %v",
         tableName, filter, fields,
@@ -1508,7 +1521,7 @@ func (this *Terminal) framesInitForTablesFields(filter string) {
 func (this *Terminal) framesInitForCommandsInput(filter string) {
     this.isShowFrames = true
     this.framesMode = FramesModeCommandsInput
-    this.frames = arrayFilterLikeString(allCmds, strings.ToUpper(filter))
+    this.frames = FilterStrings(allCmds, strings.ToUpper(filter))
     this.framesHighlightLinePosition = -1
     this.framesShowBegin = 0
     _, maxLength := arrayMaxLength(this.frames)
