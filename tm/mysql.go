@@ -352,7 +352,8 @@ func isShowTablesFieldsFrames(cmd string, index int) (flag bool) {
     flag5 := preWord == "and" && preRune == ' '
     flag6 := preRune == '.'
     flag7 := preRune == ' ' && prePreRune == '='
-    flag = flag1 || flag2 || flag3 || flag4 || flag5 || flag6 || flag7
+    flag8 := preWord == "by" && preRune == ' '
+    flag = flag1 || flag2 || flag3 || flag4 || flag5 || flag6 || flag7 || flag8
 
     // Log.Infof("table %s %s %v", name, preWord, flag)
     return
@@ -374,4 +375,52 @@ func sqlKeyWordIndexs(cmd string) (res map[string]int) {
     res["set"] = strings.Index(cmd, "set")
 
     return
+}
+
+func getCompleteSqlFromArray(array []string, x, y int) (query string){
+    // 获取列表中真正的 sql 语句
+    query = ""
+    if y < 0 && y >= len(array) {
+        return
+    }
+
+    // line := array[y]
+
+    if x < 0 && x > len(array[y]) {
+        return
+    }
+
+    total_index := x
+    for i := 0; i < y; i++ {
+        total_index += len(array[i]) + 1
+    }
+
+    total_query := strings.Join(array, " ")
+
+    // Log.Info(total_query, total_index)
+
+    if total_index > 0 && total_query[total_index - 1] == ';' {
+        total_index--
+    }
+
+
+    begin := strings.LastIndex(total_query[0:total_index], ";")
+    if begin == -1 {
+        begin = 0
+    } else {
+        begin += 1
+    }
+
+    end := strings.IndexRune(total_query[total_index:], ';')
+    if end == -1 {
+        end = len(total_query)
+    } else {
+        end = end + total_index + 1
+    }
+
+    query = strings.Trim(total_query[begin:end], " ")
+
+    return
+
+
 }

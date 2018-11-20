@@ -869,8 +869,16 @@ func (this *Terminal) listenCommands() {
             this.SetResultsBottomContent("Waiting")
             this.Rendering()
 
+            cx, cy := this.commandsCursor()
+
+            sqlStr := getCompleteSqlFromArray(
+                this.commandsSources, cx, cy,
+            )
+
+            Log.Infof("Exec sql %s", sqlStr)
+
             this.onExecCommands([]string{
-                this.commandsSourceCurrentLine(),
+                sqlStr,
             })
             this.resultsShowBegin = 0
             this.isListenKeyBorad = true
@@ -1170,6 +1178,17 @@ func (this *Terminal) listenCommandsNormal() {
             } else {
                 this.cursorY++
             }
+            minCX, _ := this.commandsMinCursor()
+            this.cursorX = minCX
+        }
+        case 'O': {
+            this.commandsChangeMode(ModeInsert)
+
+            this.commandsSources = insertInStringArray(
+                this.commandsSources,
+                this.cursorY + this.commandsShowBegin,
+                "",
+            )
             minCX, _ := this.commandsMinCursor()
             this.cursorX = minCX
         }

@@ -166,3 +166,55 @@ func TestQueryTableNamesBySqlIndex(t *testing.T) {
     }
 
 }
+
+func TestGetCompleteSqlFromArray(t *testing.T) {
+    var querys = []string{
+        "select;",
+        "select",
+        "* from",
+        "user;",
+        "select;user",
+        "from",
+    }
+    var query string
+    query = getCompleteSqlFromArray(querys, 0, 0)
+    if query != "select;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 2, 0)
+    if query != "select;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 7, 0)
+    if query != "select;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 2, 1)
+    if query != "select * from user;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 0, 2)
+    if query != "select * from user;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 5, 3)
+    if query != "select * from user;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 0, 3)
+    if query != "select * from user;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 0, 4)
+    if query != "select;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 7, 4)
+    if query != "select;" {
+        t.Error(query, " is error")
+    }
+    query = getCompleteSqlFromArray(querys, 8, 4)
+    if query != "user from" {
+        t.Error(query, " is error")
+    }
+}
