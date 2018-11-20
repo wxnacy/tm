@@ -5,7 +5,6 @@ import (
     "github.com/nsf/termbox-go"
     "time"
     "reflect"
-    "github.com/schollz/closestmatch"
 )
 
 func cellsToString(cells []Cell) string {
@@ -272,34 +271,11 @@ func deleteStringByCtrlW(s string, index int) string {
     }
 
     return s[0:preIndex] + s[index:]
-
-    // prefix := s[0:index]
-
-    // prefixs := strings.Split(prefix, " ")
-    // // fmt.Println(prefixs)
-
-    // if len(prefixs) == 1 {
-        // return s[index:]
-    // }
-
-    // begin := len(prefixs) - 2
-    // for i := len(prefixs) - 2; i >= 0; i-- {
-        // if prefixs[i] != ""{
-            // begin = i
-            // break
-        // }
-    // }
-
-    // prefix_index := begin + 1
-    // if prefixs[len(prefixs) - 1] == "" {
-        // prefix_index = begin
-    // }
-
-    // return strings.Join(prefixs[0:prefix_index], " ") + s[index:]
 }
 
 
 func mysqlArrayResultsFormat(a [][]string) []string {
+    // 将列表查询数据格式化为输出状态
     begin := time.Now()
     widths := make([]int, 0)
     for i := 0; i < len(a); i++ {
@@ -310,10 +286,7 @@ func mysqlArrayResultsFormat(a [][]string) []string {
                 widths = append(widths, len(line[j]))
             } else {
                 if widths[j] < len(line[j]) {
-                    max := len(line[j])
-                    if max > 18 {
-                        max = 18
-                    }
+                    max := min(len(line[j]), 32)
                     widths[j] = max
                 }
             }
@@ -363,21 +336,29 @@ func initResultsSplitSymbolPosition(height int) int {
 
 }
 
-func min(x, y int) int {
-    if x <= y {
-        return x
+
+func min(v ...int) (a int) {
+    a = v[0]
+    for _, d := range v {
+        if d < a {
+            a = d
+        }
     }
-    return y
+    return a
 }
 
-func max(x, y int) int {
-    if x >= y {
-        return x
+func max(v ...int) (a int) {
+    a = v[0]
+    for _, d := range v {
+        if d > a {
+            a = d
+        }
     }
-    return y
+    return a
 }
 
 func inArray(val interface{}, array interface{}) (index int) {
+    // 元素是否在数组中
     index = -1
 
     switch reflect.TypeOf(array).Kind() {
@@ -407,52 +388,6 @@ func arrayMaxLength(array []string) (s string, length int) {
         }
     }
     return
-
-}
-
-func arrayFilterLikeString(array []string, s string) []string {
-
-    // Choose a set of bag sizes, more is more accurate but slower
-    bagSizes := []int{2}
-
-    // Create a closestmatch object
-    cm := closestmatch.New(array, bagSizes)
-
-    res := cm.ClosestN(s, 3)
-    Log.Info(array, s, res)
-
-    return res
-    begin := time.Now()
-    if s == "" {
-        return array
-    }
-    newArr := make([]string, 0)
-
-    // for i := len(s); i > 0; i-- {
-        // compareWord := s[0:i]
-        // // Log.Info(compareWord)
-        // for _, d := range array {
-            // if strings.HasPrefix(d, compareWord) && inArray(d, newArr) == -1 {
-                // newArr = append(newArr, d)
-            // }
-        // }
-    // }
-    for _, d := range array {
-        if strings.HasPrefix(d, s) && inArray(d, newArr) == -1 {
-            newArr = append(newArr, d)
-        }
-    }
-
-    if len(newArr) < len(array) {
-        for _, d := range array {
-            if strings.ContainsAny(d, s) && inArray(d, newArr) == -1{
-                newArr = append(newArr, d)
-            }
-        }
-    }
-
-    Log.Infof("arrayFilterLikeString time: %v", time.Since(begin))
-    return newArr
 
 }
 

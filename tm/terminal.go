@@ -38,10 +38,43 @@ const (
 type Event struct {
     preCh rune
     ch rune
+    chs []rune
+    operatorChs []rune
     preKey termbox.Key
     key termbox.Key
     e termbox.Event
 }
+
+func newEvent() (e *Event) {
+    e = &Event{
+        chs: make([]rune, 0),
+        operatorChs: make([]rune, 0),
+    }
+    return
+}
+
+func (this *Event) clearOperator() {
+    this.operatorChs = make([]rune, 0)
+}
+
+func (this *Event) setCh(r rune) {
+
+    this.preCh = this.ch
+    this.ch = r
+}
+
+func (this *Event) resetOperator() {
+
+    if inArray(this.ch, []rune("yvdc")) > -1 {
+        this.clearOperator()
+        this.operatorChs = append(this.operatorChs, this.ch)
+    } else {
+        if len(this.operatorChs) > 0 {
+            this.operatorChs = append(this.operatorChs, this.ch)
+        }
+    }
+}
+
 
 type Cell struct {
     Ch rune
@@ -120,7 +153,7 @@ func New(name string) (*Terminal, error){
         height: h,
         tableSplitSymbolPosition: 20,
         resultsSplitSymbolPosition: 6,
-        e: &Event{},
+        e: newEvent(),
         mode: ModeNormal,
         position: PositionTables,
         cursorY: 1,
@@ -493,6 +526,10 @@ func (this *Terminal) resetField() {
 
     this.framesHeight = min(this.height / 2 - 1, len(this.frames))
 
+    if this.commandsMode == ModeNormal {
+        this.commandsBottomContent = string(this.e.operatorChs)
+    }
+
 }
 
 func (this *Terminal) resetCursor() {
@@ -613,6 +650,7 @@ func (this *Terminal) ListenKeyBorad() {
     switch e.Key {
         case termbox.KeyEsc: {
             this.isShowFrames = false
+            this.e.operatorChs = make([]rune, 0)
         }
         case termbox.KeyCtrlH: {
             if this.isCursorInResults() || this.isCursorInCommands(){
@@ -977,6 +1015,53 @@ func (this *Terminal) listenCommandsNormal() {
         return
     }
 
+    operatorStr := string(this.e.operatorChs)
+    Log.Info(operatorStr)
+
+
+    if len(operatorStr) >= 2 {
+        first2Str := operatorStr[0:2]
+        switch first2Str {
+            case "di": {
+                this.commandsDeleteInRune()
+            }
+            case "ci": {
+                this.commandsDeleteInRune()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "dt": {
+                this.commandsDeleteToRune()
+            }
+            case "ct": {
+                this.commandsDeleteToRune()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "db": {
+                this.commandsDeleteByCtrlW()
+            }
+            case "de": {
+                this.commandsDeleteToWordEnd()
+            }
+            case "dw": {
+                this.commandsDeleteToWordEnd()
+            }
+            case "cb": {
+                this.commandsDeleteByCtrlW()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "ce": {
+                this.commandsDeleteToWordEnd()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "cw": {
+                this.commandsDeleteToWordEnd()
+                this.commandsChangeMode(ModeInsert)
+            }
+
+        }
+        return
+    }
+
     switch this.e.ch {
         case 'q': {
             os.Exit(0)
@@ -998,7 +1083,9 @@ func (this *Terminal) listenCommandsNormal() {
             this.commandsSources[currentLineNum] = cmd
         }
         case 'i': {
-            this.commandsChangeMode(ModeInsert)
+            if len(this.e.operatorChs) == 0 {
+                this.commandsChangeMode(ModeInsert)
+            }
         }
         case 'I': {
             this.commandsChangeMode(ModeInsert)
@@ -1187,8 +1274,84 @@ func (this *Terminal) commandsInsert(index int, s string) (cmd string){
     return
 }
 
-func (this *Terminal) commandsDeletePreWord() (newcmd string){
+func (this *Terminal) commandsDeleteToRune() (newcmd string){
+    // 删除到指定 rune
+    ch := this.e.ch
+    currentLineNum := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentLineNum]
+    newcmd = cmd
+    x, _ := this.commandsCursor()
+    index := strings.IndexRune(cmd[x:], ch)
+    this.e.clearOperator()
+    if index == -1 {
+        return
+    }
+    this.commandsSources[currentLineNum] = cmd[0:x] +  cmd[x + index:]
+    newcmd = this.commandsSources[currentLineNum]
+    return
+}
 
+func (this *Terminal) commandsDeleteToLastRune() (newcmd string){
+    // 删除到指定 rune
+
+    currentLineNum := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentLineNum]
+    x, _ := this.commandsCursor()
+    this.commandsSources[currentLineNum] = cmd[0:x]
+    this.e.clearOperator()
+    newcmd = this.commandsSources[currentLineNum]
+
+    return
+}
+
+func (this *Terminal) commandsDeleteInRune() (newcmd string){
+    // 删除到指定 rune
+    this.e.clearOperator()
+    ch := this.e.ch
+    if ch == 'g' {
+        newcmd = this.commandsDeleteToLastRune()
+        return
+    }
+    currentLineNum := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentLineNum]
+    newcmd = cmd
+    x, _ := this.commandsCursor()
+    begin := strings.LastIndex(cmd[0:x], string(ch))
+    if begin == -1 {
+        return
+    }
+    pairCh := getBracketpair(ch)
+    if pairCh == 0 {
+        return
+    }
+    end := strings.IndexRune(cmd[x:], pairCh)
+    if end == -1 {
+        return
+    }
+    this.commandsSources[currentLineNum] = cmd[0:begin + 1] +  cmd[x + end:]
+    minCX, _ := this.commandsMinCursor()
+    this.cursorX = minCX + begin + 1
+    newcmd = this.commandsSources[currentLineNum]
+    return
+}
+
+func (this *Terminal) commandsDeleteToWordEnd() (newcmd string){
+    this.e.clearOperator()
+    currentPosition := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentPosition]
+    newcmd = cmd
+    cx, _ := this.commandsCursor()
+    index := stringNextWordEnd(cmd, cx)
+    if index <= cx {
+        return
+    }
+    newcmd = cmd[0:cx] + cmd[index + 1:]
+    this.commandsSources[currentPosition] = newcmd
+    return
+}
+
+func (this *Terminal) commandsDeletePreWord() (newcmd string){
+    this.e.clearOperator()
     currentPosition := this.commandsSourceCurrentLinePosition()
     cmd := this.commandsSources[currentPosition]
     cx, _ := this.commandsCursor()
@@ -1918,16 +2081,19 @@ func (t *Terminal) PollEvent() termbox.Event{
         )
         switch e.Type {
             case termbox.EventKey:
-                t.e.preCh = t.e.ch
+                ch := e.Ch
                 if e.Key == termbox.KeySpace {
-                    t.e.ch = ' '
-                } else {
-                    t.e.ch = e.Ch
+                    ch = ' '
                 }
+                t.e.setCh(ch)
                 t.e.e = e
 
                 t.e.preKey = t.e.key
                 t.e.key = e.Key
+
+                if t.commandsMode == ModeNormal {
+                    t.e.resetOperator()
+                }
                 return e
             case termbox.EventResize:
                 t.width = e.Width

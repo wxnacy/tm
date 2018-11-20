@@ -79,3 +79,32 @@ func filterStringItem(array []string, s string, begin int) (results []string) {
     }
     return
 }
+
+func getBracketpair(r rune) (ch rune) {
+    ch = 0
+    switch r {
+        case '`': {
+            ch = '`'
+        }
+        case '"': {
+            ch = '"'
+        }
+        case '\'': {
+            ch = '\''
+        }
+        case '(': {
+            ch = ')'
+        }
+        case '{': {
+            ch = '}'
+        }
+        case '<': {
+            ch = '>'
+        }
+        case '[': {
+            ch = ']'
+        }
+    }
+
+    return
+}

@@ -275,14 +275,11 @@ func queryTableNamesBySqlIndex(cmd string, index int) (names []string) {
         endIndex := len(cmd)
         if indexs["where"] > fromIndex {
             endIndex = indexs["where"]
-        }
-        if indexs["order"] > fromIndex {
+        } else if indexs["order"] > fromIndex {
             endIndex = indexs["order"]
-        }
-        if indexs["group"] > fromIndex {
+        } else if indexs["group"] > fromIndex {
             endIndex = indexs["group"]
-        }
-        if indexs["limit"] > fromIndex {
+        } else if indexs["limit"] > fromIndex {
             endIndex = indexs["limit"]
         }
         nameStr := strings.Trim(cmd[fromIndex + 4:endIndex], " ")

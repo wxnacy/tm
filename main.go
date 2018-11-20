@@ -11,7 +11,7 @@ import (
 )
 
 const (
-    version string = "0.3.4"
+    version string = "0.3.5"
 )
 
 var m *tm.Mysql
@@ -83,7 +83,6 @@ func InitMysql() {
             confData, err := tm.ReadFile(creDir + "/" + action)
             checkErr(err)
             urls := strings.Split(confData, " ")
-            // fmt.Println(urls)
             user = urls[0]
             passwd = urls[1]
             host = urls[2]

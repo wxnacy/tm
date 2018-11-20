@@ -21,13 +21,6 @@ func TestCellsToString(t *testing.T) {
     }
 }
 
-// func TestCommandToCells(t *testing.T) {
-    // s := " hahah ssss sss   dd  "
-    // if  commandToCells(s, termbox.ColorDefault) == nil {
-        // t.Error("error")
-    // }
-// }
-
 func TestInsertInString(t *testing.T) {
 
     s := "select"
@@ -451,4 +444,19 @@ func TestArrayMaxLength(t *testing.T) {
     if s != "bcbn" && i != 1 {
         t.Error(s, " is error")
     }
+}
+
+func TestMinMax(t *testing.T) {
+    var a int
+
+    a = min(13, 80, 9, 10)
+    if a != 9 {
+        t.Error(a, " is error")
+    }
+
+    a = max(13, 80, 9, 10)
+    if a != 80 {
+        t.Error(a, " is error")
+    }
+
 }
