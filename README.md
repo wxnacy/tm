@@ -31,6 +31,10 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 
 ## 更新日志
 
+<!-- **0.3.6** -->
+<!-- - 更新时间：2018-11-21 -->
+<!-- - commands 修改 vim 功能键的 bug -->
+
 **0.3.5**
 - 更新时间：2018-11-20
 - results 区域调整字段的宽度

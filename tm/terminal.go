@@ -65,7 +65,7 @@ func (this *Event) setCh(r rune) {
 
 func (this *Event) resetOperator() {
 
-    if inArray(this.ch, []rune("yvdc")) > -1 {
+    if inArray(this.ch, []rune("dc")) > -1 && this.ch != this.preCh {
         this.clearOperator()
         this.operatorChs = append(this.operatorChs, this.ch)
     } else {
@@ -1018,8 +1018,45 @@ func (this *Terminal) listenCommandsNormal() {
     operatorStr := string(this.e.operatorChs)
     Log.Info(operatorStr)
 
+    if len(operatorStr) == 2 {
+        first2Str := operatorStr[0:2]
+        switch first2Str {
+            case "db": {
+                this.commandsDeleteByCtrlW()
+            }
+            case "de": {
+                this.commandsDeleteToWordEnd()
+            }
+            case "dw": {
+                this.commandsDeleteToWordEnd()
+            }
+            case "cb": {
+                this.commandsDeleteByCtrlW()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "ce": {
+                this.commandsDeleteToWordEnd()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "cw": {
+                this.commandsDeleteToWordEnd()
+                this.commandsChangeMode(ModeInsert)
+            }
+            case "dd": {
+                this.commandsDeleteCurrentLine()
+                this.e.clearOperator()
+            }
+            case "cc": {
+                this.commandsSources[this.commandsSourceCurrentLinePosition()] = ""
+                this.commandsChangeMode(ModeInsert)
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = minCX
+                this.e.clearOperator()
+            }
+        }
+        return
 
-    if len(operatorStr) >= 2 {
+    } else if len(operatorStr) == 3 {
         first2Str := operatorStr[0:2]
         switch first2Str {
             case "di": {
@@ -1057,20 +1094,33 @@ func (this *Terminal) listenCommandsNormal() {
                 this.commandsDeleteToWordEnd()
                 this.commandsChangeMode(ModeInsert)
             }
-
+            case "dd": {
+                this.commandsDeleteCurrentLine()
+                this.e.clearOperator()
+            }
+            case "cc": {
+                this.commandsSources[this.commandsSourceCurrentLinePosition()] = ""
+                this.commandsChangeMode(ModeInsert)
+                minCX, _ := this.commandsMinCursor()
+                this.cursorX = minCX
+                this.e.clearOperator()
+            }
+            default: {
+                Log.Info("operator default")
+                this.e.clearOperator()
+                return
+            }
         }
+        return
+    }
+
+    if len(operatorStr) > 0 {
         return
     }
 
     switch this.e.ch {
         case 'q': {
             os.Exit(0)
-        }
-        case 'd': {
-            if this.e.preCh == 'd' {
-                this.commandsDeleteCurrentLine()
-                this.e.ch = 0
-            }
         }
         case 'x': {
             currentLineNum := this.commandsSourceCurrentLinePosition()
@@ -1106,16 +1156,6 @@ func (this *Terminal) listenCommandsNormal() {
             this.commandsChangeMode(ModeInsert)
             minCX, _ := this.commandsMinCursor()
             this.cursorX = minCX
-        }
-        case 'c': {
-            if this.e.preCh == 'c' {
-
-                this.commandsSources[this.commandsSourceCurrentLinePosition()] = ""
-                this.commandsChangeMode(ModeInsert)
-                minCX, _ := this.commandsMinCursor()
-                this.cursorX = minCX
-                this.e.ch = 0
-            }
         }
         case 'o': {
             this.commandsChangeMode(ModeInsert)
