@@ -28,14 +28,21 @@ func stringToCellsWithColor(s string, fg termbox.Attribute, bg termbox.Attribute
     return cells
 }
 
-func commandToCells(s string, bg termbox.Attribute) []Cell {
-    splits := strings.Split(s, " ")
-
+func commandToCells(s string, bg termbox.Attribute, lineNumWidth int) []Cell {
+    splits := strings.Split(s[lineNumWidth:], " ")
     cells := make([]Cell, 0)
+
+    lineChs := []rune(s[0:lineNumWidth])
+    for _, d := range lineChs {
+        lineBg := termbox.ColorBlack
+        if bg == termbox.ColorBlack {
+            lineBg = termbox.ColorDefault
+        }
+        cells = append(cells, Cell{Ch: d, Bg: lineBg})
+    }
 
     for i, word := range splits {
         chs := []rune(word)
-        // nbg := bg
 
         compareWord := strings.ToLower(word)
         if strings.HasSuffix(word, ";") {

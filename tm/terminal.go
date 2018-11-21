@@ -466,7 +466,6 @@ func (this *Terminal) initCommands() {
 func (this *Terminal) resetCommands() {
     px, _ := this.resultsPosition()
     cy := this.commandsMaxCursorY()
-    // minCX, _ := this.commandsMinCursor()
 
     this.cells[this.resultsSplitSymbolPosition - 1] = cellsReplace(
         this.cells[this.resultsSplitSymbolPosition - 1],
@@ -477,6 +476,8 @@ func (this *Terminal) resetCommands() {
             termbox.ColorDefault,
         ),
     )
+
+    lineNumWidth := this.commandsLineNumWidth()
 
     for i := 0; i < len(this.commands); i++ {
         index := i + this.commandsShowBegin
@@ -499,7 +500,7 @@ func (this *Terminal) resetCommands() {
         this.cells[i] = cellsReplace(
             this.cells[i],
             this.tableSplitSymbolPosition + 1,
-            commandToCells(this.commands[index], bg),
+            commandToCells(this.commands[index], bg, lineNumWidth),
         )
 
     }
@@ -1419,16 +1420,14 @@ func (this *Terminal) commandsDeletePreWord() (newcmd string){
     return
 }
 
-func (this *Terminal) commandsChangeCurrentLine(
-    func changeFunc(line string) string) (newline string){
-
-    currentLineNum := this.commandsSourceCurrentLinePosition()
-    cmd := this.commandsSources[currentLineNum]
-
-    this.commandsSources[currentLineNum] = changeFunc(cmd)
-    newline = this.commandsSources[currentLineNum]
-    return
-}
+// func (this *Terminal) commandsChangeCurrentLine(
+    // func changeFunc(line string) string) (newline string){
+    // currentLineNum := this.commandsSourceCurrentLinePosition()
+    // cmd := this.commandsSources[currentLineNum]
+    // this.commandsSources[currentLineNum] = changeFunc(cmd)
+    // newline = this.commandsSources[currentLineNum]
+    // return
+// }
 
 func (this *Terminal) commandsPreRune() (r rune){
     cx, _ := this.commandsCursor()
