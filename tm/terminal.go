@@ -1419,6 +1419,16 @@ func (this *Terminal) commandsDeletePreWord() (newcmd string){
     return
 }
 
+func (this *Terminal) commandsChangeCurrentLine(
+    func changeFunc(line string) string) (newline string){
+
+    currentLineNum := this.commandsSourceCurrentLinePosition()
+    cmd := this.commandsSources[currentLineNum]
+
+    this.commandsSources[currentLineNum] = changeFunc(cmd)
+    newline = this.commandsSources[currentLineNum]
+    return
+}
 
 func (this *Terminal) commandsPreRune() (r rune){
     cx, _ := this.commandsCursor()
@@ -1462,9 +1472,9 @@ func (this *Terminal) commandsDeleteByBackspace() {
     }
 
     if x <= 0 {
-        if cmd == "" {
-            return
-        }
+        // if cmd != "" {
+            // // return
+        // }
         this.commandsDeleteCurrentString()
         maxCY := this.commandsMaxCursorY()
         if this.cursorY == maxCY && this.commandsShowBegin > 0 {

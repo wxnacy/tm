@@ -31,11 +31,11 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 
 ## 更新日志
 
-<!-- **0.3.6** -->
-<!-- - 更新时间：2018-11-21 -->
-<!-- - commands 修改 vim 功能键的 bug -->
-<!-- - commands 增加新的 vim 按键 -->
-<!-- - commands 优化 sql 语句的获取 -->
+**0.3.6**
+- 更新时间：2018-11-21
+- commands 修改 vim 功能键的 bug
+- commands 增加新的 vim 按键
+- commands 优化 sql 语句的获取
 
 **0.3.5**
 - 更新时间：2018-11-20

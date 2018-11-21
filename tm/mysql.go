@@ -11,9 +11,9 @@ const (
     querySqlBegin string = "select show"
     execSqlBegin = "update delete drop create"
 
-    CmdRed = "into values from where order by desc asc index on add table if column null default limit as"
+    CmdRed = "into values from where order by desc asc on add if column null default limit as group having"
     CmdGreen = "select drop alter insert update delete set explain like and in show create exists not"
-    CmdBlue = "count processlist sum max min"
+    CmdBlue = "count processlist distinct sum max min index keys table unique key primary"
 )
 
 var allCmd = fmt.Sprintf("%s %s %s",CmdGreen, CmdBlue, CmdRed)
@@ -283,8 +283,9 @@ func queryTableNamesBySqlIndex(cmd string, index int) (names []string) {
             endIndex = indexs["limit"]
         }
         nameStr := strings.Trim(cmd[fromIndex + 4:endIndex], " ")
+        nameStr = strings.Trim(nameStr, ";")
         for _, d := range strings.Split(nameStr, ",") {
-            names = append(names, strings.Trim(strings.Trim(d, " "), "``"))
+            names = append(names, strings.Trim(strings.Trim(d, " "), "`"))
         }
         return
     }
