@@ -26,25 +26,38 @@ func NewLogger() *Logger {
 }
 
 func (this *Logger) Info(v ...interface{}) {
-    this.Infof("%p", v)
+    var fmtstr []string
+    for _ = range v {
+        fmtstr = append(fmtstr, "%v")
+    }
+    this.log("INFO", strings.Join(fmtstr, " "), v...)
 }
 
 func (this *Logger) Infof(fmts string, v ...interface{}) {
-    _, filename, line, _ := runtime.Caller(2)
-    filenames := strings.Split(filename, "/")
-    s := fmt.Sprintf(fmts, v...)
-    l.Printf("[%s:%d\t] [INFO] %s", filenames[len(filenames)-1], line, s)
+    this.log("INFO", fmts, v...)
 }
 
+
 func (this *Logger) Error(v ...interface{}) {
-    this.Errorf("%p", v)
+    var fmtstr []string
+    for _ = range v {
+        fmtstr = append(fmtstr, "%v")
+    }
+    this.log("ERROR", strings.Join(fmtstr, " "), v...)
 }
 
 func (this *Logger) Errorf(fmts string, v ...interface{}) {
-    _, filename, line, _ := runtime.Caller(2)
-    filenames := strings.Split(filename, "/")
-    s := fmt.Sprintf(fmts, v...)
-    l.Printf("[%s:%d\t] [ERROR] %s", filenames[len(filenames)-1], line, s)
+    this.log("INFO", fmts, v...)
+}
+
+func (this *Logger) log(level, fmts string, v ...interface{}) {
+    _, filename, line, ok := runtime.Caller(2)
+    content := fmt.Sprintf(fmts, v...)
+    if ok {
+        filenames := strings.Split(filename, "/")
+        filename = filenames[len(filenames)-1]
+    }
+    l.Printf("[%s:%d\t] [%s] %s", filename, line, level, content)
 }
 
 func initLogger() *log.Logger{

@@ -346,7 +346,6 @@ func (this *Terminal) resetResults() {
         this.resultsColumns = this.results[0]
         this.resultsFormat = mysqlArrayResultsFormat(this.results)
     }
-    Log.Info("colums ", this.resultsColumns)
     this.resultsFormatIfNeedRefresh = false
     b := this.resultsFormat
 
@@ -367,7 +366,6 @@ func (this *Terminal) resetResults() {
 
         index := y + this.resultsShowBegin + 2
         if index >= len(b) {
-            Log.Info("reset result half y time: ", time.Since(begin))
             return
         }
         chs := []rune(b[index])
@@ -985,7 +983,6 @@ func (this *Terminal) listenCommandsNormal() {
     }
 
     operatorStr := string(this.e.operatorChs)
-    Log.Info(operatorStr)
 
     if len(operatorStr) == 2 {
         first2Str := operatorStr[0:2]
