@@ -3,6 +3,9 @@ package tm
 import (
     "log"
     "os"
+    "runtime"
+    "strings"
+    "fmt"
 )
 
 var l *log.Logger
@@ -23,23 +26,25 @@ func NewLogger() *Logger {
 }
 
 func (this *Logger) Info(v ...interface{}) {
-    l.SetPrefix("[INFO] ")
-    l.Print(v...)
+    this.Infof("%p", v)
 }
 
-func (this *Logger) Infof(fmt string, v ...interface{}) {
-    l.SetPrefix("[INFO] ")
-    l.Printf(fmt, v...)
+func (this *Logger) Infof(fmts string, v ...interface{}) {
+    _, filename, line, _ := runtime.Caller(2)
+    filenames := strings.Split(filename, "/")
+    s := fmt.Sprintf(fmts, v...)
+    l.Printf("[%s:%d\t] [INFO] %s", filenames[len(filenames)-1], line, s)
 }
 
 func (this *Logger) Error(v ...interface{}) {
-    l.SetPrefix("[ERROR] ")
-    l.Print(v...)
+    this.Errorf("%p", v)
 }
 
-func (this *Logger) Errorf(fmt string, v ...interface{}) {
-    l.SetPrefix("[ERROR] ")
-    l.Printf(fmt, v...)
+func (this *Logger) Errorf(fmts string, v ...interface{}) {
+    _, filename, line, _ := runtime.Caller(2)
+    filenames := strings.Split(filename, "/")
+    s := fmt.Sprintf(fmts, v...)
+    l.Printf("[%s:%d\t] [ERROR] %s", filenames[len(filenames)-1], line, s)
 }
 
 func initLogger() *log.Logger{
@@ -51,6 +56,6 @@ func initLogger() *log.Logger{
         // checkErr(err)
     }
     file, _ := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-    return log.New(file, "", log.LstdFlags|log.Lshortfile)
+    return log.New(file, "", log.LstdFlags)
 }
 

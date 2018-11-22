@@ -35,47 +35,6 @@ const (
     ReloadTypeAllTable
 )
 
-type Event struct {
-    preCh rune
-    ch rune
-    chs []rune
-    operatorChs []rune
-    preKey termbox.Key
-    key termbox.Key
-    e termbox.Event
-}
-
-func newEvent() (e *Event) {
-    e = &Event{
-        chs: make([]rune, 0),
-        operatorChs: make([]rune, 0),
-    }
-    return
-}
-
-func (this *Event) clearOperator() {
-    this.operatorChs = make([]rune, 0)
-}
-
-func (this *Event) setCh(r rune) {
-
-    this.preCh = this.ch
-    this.ch = r
-}
-
-func (this *Event) resetOperator() {
-
-    if inArray(this.ch, []rune("dc")) > -1 && this.ch != this.preCh {
-        this.clearOperator()
-        this.operatorChs = append(this.operatorChs, this.ch)
-    } else {
-        if len(this.operatorChs) > 0 {
-            this.operatorChs = append(this.operatorChs, this.ch)
-        }
-    }
-}
-
-
 type Cell struct {
     Ch rune
     Fg termbox.Attribute    // 文字颜色
@@ -870,10 +829,11 @@ func (this *Terminal) listenCommands() {
             this.SetResultsBottomContent("Waiting")
             this.Rendering()
 
-            cx, cy := this.commandsCursor()
+            cx, _ := this.commandsCursor()
+            linePosition := this.commandsSourceCurrentLinePosition()
 
             sqlStr := getCompleteSqlFromArray(
-                this.commandsSources, cx, cy,
+                this.commandsSources, cx, linePosition,
             )
 
             Log.Infof("Exec sql %s", sqlStr)

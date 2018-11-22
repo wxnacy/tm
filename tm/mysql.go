@@ -385,8 +385,6 @@ func getCompleteSqlFromArray(array []string, x, y int) (query string){
         return
     }
 
-    // line := array[y]
-
     if x < 0 && x > len(array[y]) {
         return
     }
@@ -398,12 +396,11 @@ func getCompleteSqlFromArray(array []string, x, y int) (query string){
 
     total_query := strings.Join(array, " ")
 
-    // Log.Info(total_query, total_index)
-
     if total_index > 0 && total_query[total_index - 1] == ';' {
         total_index--
     }
 
+    // Log.Info(total_query, total_index)
 
     begin := strings.LastIndex(total_query[0:total_index], ";")
     if begin == -1 {
@@ -422,6 +419,4 @@ func getCompleteSqlFromArray(array []string, x, y int) (query string){
     query = strings.Trim(total_query[begin:end], " ")
 
     return
-
-
 }
