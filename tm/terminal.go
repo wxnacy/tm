@@ -1743,8 +1743,20 @@ func (this *Terminal) framesInitForResultsDetail() {
 
                 }
             }
-        } else {
+        } else if strings.Contains(field, "\n") {
 
+            contents := strings.Split(field, "\n")
+            for j, jd := range contents {
+
+                fmt := strings.Repeat(" ", len(d)) + "  "
+                if j == 0 {
+                    fmt = d + ": "
+                }
+                frames = append(frames, fmt + jd)
+
+            }
+
+        } else {
             frames = append(frames, fmt.Sprintf("%s: %s", d, field))
         }
     }

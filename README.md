@@ -31,6 +31,11 @@ $ wget https://github.com/wxnacy/tm/blob/master/bin/linux_amd64/tm?raw=true -O t
 
 ## 更新日志
 
+**0.3.8**
+- 更新时间：2018-11-23
+- results 优化结果详情的显示
+- 优化了日志输出格式
+
 **0.3.7**
 - 更新时间：2018-11-22
 - commands 修改行数列的配色

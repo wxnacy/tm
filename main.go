@@ -11,7 +11,7 @@ import (
 )
 
 const (
-    version string = "0.3.7"
+    version string = "0.3.8"
 )
 
 var m *tm.Mysql
