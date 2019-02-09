@@ -13,11 +13,11 @@ var TM_DIR = os.Getenv("HOME") + "/.tm"
 var LOG_DIR = TM_DIR + "/logs"
 var CMD_DIR = TM_DIR + "/commands"
 var TABLE_DIR = TM_DIR + "/tables"
+var CREDENTIAL_DIR = TM_DIR + "/credentials"
 
 func cmdPath(name string) string {
     return fmt.Sprintf("%s/%s", CMD_DIR, name)
 }
-
 
 func Exists(path string) bool {
 	_, err := os.Stat(path)    //os.Stat获取文件信息

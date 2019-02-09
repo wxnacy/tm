@@ -5,6 +5,7 @@ import (
     "github.com/nsf/termbox-go"
     "time"
     "reflect"
+    "fmt"
 )
 
 func cellsToString(cells []Cell) string {
@@ -402,5 +403,11 @@ func checkErr(err error) {
     if err != nil {
         Log.Error(err)
         panic(err)
+    }
+}
+func PrintErr(err error) {
+    if err != nil {
+        Log.Error(err)
+        fmt.Println(err)
     }
 }

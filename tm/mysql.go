@@ -36,8 +36,8 @@ func NewMysql(user, passwd, host, port, db string) (*Mysql, error) {
         port: port,
         database:db,
     }
-    m.Connect()
-    return m, nil
+    err := m.Connect()
+    return m, err
 }
 
 func (this *Mysql) Connect() (error) {
@@ -61,6 +61,12 @@ func (this *Mysql) Connect() (error) {
     }
     this.db = DB
     return nil
+}
+
+func (this *Mysql) SetDatabase(dbname string) {
+    this.database = dbname
+    this.Close()
+    this.Connect()
 }
 
 func (this *Mysql) Exec(sql string, args ...interface{}) (sql.Result, error) {

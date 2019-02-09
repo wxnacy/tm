@@ -8,49 +8,76 @@ import (
     "os"
     "strings"
     "database/sql"
+	"github.com/c-bata/go-prompt"
+    "github.com/howeyc/gopass"
+    "os/user"
+    "github.com/olekukonko/tablewriter"
 )
 
 const (
-    version string = "0.3.8"
+    version string = "0.4.0"
 )
 
 var m *tm.Mysql
 var t *tm.Terminal
+var C tm.Credential
 var err error
 var args []string
 var conf string
-var user string
+var username string
 var passwd string
+var pass []byte
 var host string
 var port string
 var db string
+var dbname string
 var creDir = os.Getenv("HOME") + "/.tm/credentials"
 
 var v bool
+var p bool
+var s string
+var c string
 
 func InitArgs() {
     flag.BoolVar(&v, "v", false, "")
+    flag.StringVar(&username, "u", "", "")
+    flag.StringVar(&host, "h", "", "")
+    flag.StringVar(&port, "P", "", "")
+    flag.StringVar(&s, "s", "", "")
+    flag.StringVar(&c, "c", "", "")
+    flag.BoolVar(&p, "p", false, "")
     flag.Parse()
     args = flag.Args()
+
+    if c != "" {
+        path := fmt.Sprintf("%s/%s", creDir, c)
+        C, err = tm.LoadCredentialFromPath(path)
+        PrintErr(err)
+        InitMysql()
+
+    }
+    if len(args) > 0 {
+        dbname = args[0]
+    }
+    if p {
+        fmt.Print("Enter password: ")
+        pass, err = gopass.GetPasswd()
+        checkErr(err)
+        passwd = string(pass)
+    }
     conf = ""
-    user = "root"
-    host = "localhost"
-    port = "3306"
-}
+    C = tm.Credential{}
+    C.Username = username
+    C.Host = host
+    C.Port = port
+    C.Password = passwd
+    C.Database = dbname
 
-func InitMysqlConfig() {
+    if s != "" {
+        tm.SaveCredential(s, C)
+    }
 
-    fmt.Print("user(root): ")
-    fmt.Scanln(&user)
-    fmt.Print("password: ")
-    fmt.Scanln(&passwd)
-    fmt.Print("host(localhost): ")
-    fmt.Scanln(&host)
-    fmt.Print("port(3306): ")
-    fmt.Scanln(&port)
-    fmt.Print("db: ")
-    fmt.Scanln(&db)
-
+    tm.Log.Info("args ", username, host, port, passwd, s, dbname)
 }
 
 func checkErr(err error) {
@@ -59,43 +86,68 @@ func checkErr(err error) {
     }
 }
 
-func SaveMysqlConfig() {
-    var credentialsDir = fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".tm/credentials")
-    filename := credentialsDir + "/" + conf
-    tm.SaveFile(filename, fmt.Sprintf("%s %s %s %s %s", user, passwd, host, port, db))
-}
+// func SaveMysqlConfig() {
+    // var credentialsDir = fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".tm/credentials")
+    // filename := credentialsDir + "/" + conf
+    // tm.SaveFile(filename, fmt.Sprintf("%s %s %s %s %s", username, passwd, host, port, db))
+// }
 
 func InitMysql() {
 
-    if len(args) == 0 {
-        fmt.Println("Connect to Mysql")
-        InitMysqlConfig()
-    } else {
-        var action = args[0]
-        if action == "init" {
-            fmt.Println("Save to Mysql")
-            fmt.Print("Config name: ")
-            fmt.Scanln(&conf)
-            InitMysqlConfig()
-            SaveMysqlConfig()
-        } else {
-            conf = action
-            confData, err := tm.ReadFile(creDir + "/" + action)
-            checkErr(err)
-            urls := strings.Split(confData, " ")
-            user = urls[0]
-            passwd = urls[1]
-            host = urls[2]
-            port = urls[3]
-            db = urls[4]
-        }
+    username = C.Username
+    if username == "" {
+        osUser, err := user.Current()
+        PrintErr(err)
+        username = osUser.Username
     }
 
-    m, err = tm.NewMysql(user, passwd, host, port, db)
+    passwd = C.Password
+    host = C.Host
+    if host == "" {
+        host = "localhost"
+    }
+
+    port = C.Port
+    if port == "" {
+        port = "3306"
+    }
+
+    dbname = C.Database
+
+    m, err = tm.NewMysql(username, passwd, host, port, dbname)
+    PrintErr(err)
+
+    if dbname != "" {
+        InitTerminal()
+    }
+    res, err := m.QueryResultArray("show databases;")
+    PrintErr(err)
+
+    table := tablewriter.NewWriter(os.Stdout)
+    table.SetHeader([]string{res[0][0]})
+
+    for _, d := range res[1:] {
+        table.Append([]string{d[0]})
+    }
+    table.Render() // Send output
+    fmt.Println("Input command: [use <database>;] to select database")
+    // fmt.Println(`
+    // Input command
+        // use <database>
+    // To select databse
+    // `)
+    Prompt()
+
+}
+
+func PrintErr(err error) {
+    tm.Log.Error(err)
     if err != nil {
         fmt.Println(err)
-        panic(err)
+        os.Exit(0)
+        return
     }
+
 }
 
 func QueryTables() []string{
@@ -177,13 +229,72 @@ func onReload(typ tm.ReloadType, v ...interface{}) {
     }
 }
 
-func main() {
-    InitArgs()
-    if v {
-        fmt.Println(version)
-        return
+func completer(d prompt.Document) []prompt.Suggest {
+    s := []prompt.Suggest{
+		{Text: "users", Description: "Store the username and age"},
+		{Text: "articles", Description: "Store the article text posted by username"},
+		{Text: "comments", Description: "Store the text commented to articles"},
+	}
+	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
+}
+
+func executor(t string) {
+    tm.Log.Info("input ", t)
+    t = strings.TrimRight(t, ";")
+    ts := strings.Split(t, " ")
+    cmd := ts[0]
+    switch cmd {
+        case "exit": {
+            tm.Log.Info("Exit")
+            os.Exit(0)
+        }
+        case "": {
+            tm.Log.Info(username)
+            if username == "" {
+                username = "root"
+                LivePrefixState.IsEnable = true
+                LivePrefixState.LivePrefix = cmd
+            }
+        }
+        case "use": {
+            dbname = ts[1]
+            m.SetDatabase(dbname)
+            InitTerminal()
+
+        }
+        default: {
+            if username == "" {
+                username = cmd
+            }
+
+            LivePrefixState.LivePrefix = cmd + "> "
+            LivePrefixState.IsEnable = true
+        }
     }
-    InitMysql()
+    fmt.Println(username)
+	return
+}
+
+var LivePrefixState struct {
+	LivePrefix string
+	IsEnable   bool
+}
+
+func changeLivePrefix() (string, bool) {
+	return LivePrefixState.LivePrefix, LivePrefixState.IsEnable
+}
+
+func Prompt() {
+
+    p := prompt.New(
+        executor,
+        completer,
+        prompt.OptionPrefix("tm > "),
+    )
+    p.Run()
+}
+
+func InitTerminal() {
 
     t, err = tm.New(conf)
     if err != nil {
@@ -204,4 +315,16 @@ func main() {
     defer m.Close()
     defer t.Close()
 }
+
+func main() {
+
+    InitArgs()
+    if v {
+        fmt.Println(version)
+        return
+    }
+    InitMysql()
+
+}
+
 
