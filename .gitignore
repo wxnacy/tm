@@ -146,5 +146,6 @@ var/
 *.egg
 tmp/*
 *tmp*
+bin/*
 
 # for public end
