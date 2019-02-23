@@ -1,0 +1,91 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "/EPtamKs8v1pd1qZuoDkDD05Bn0=",
+			"path": "github.com/c-bata/go-prompt",
+			"revision": "f18d04e87b77754ef9837c1ff6a3f862cff5ef15",
+			"revisionTime": "2018-08-26T11:30:26Z"
+		},
+		{
+			"checksumSHA1": "k9izYoyobR8Upb3Yjsw9htgE/Mk=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "99ff426eb706cffe92ff3d058e168b278cabf7c7",
+			"revisionTime": "2018-07-19T07:19:42Z"
+		},
+		{
+			"checksumSHA1": "K6exl2ouL7d8cR2i378EzZOdRVI=",
+			"path": "github.com/howeyc/gopass",
+			"revision": "bf9dde6d0d2c004a008c27aaee91170c786f6db8",
+			"revisionTime": "2017-01-09T16:22:49Z"
+		},
+		{
+			"checksumSHA1": "SEnjvwVyfuU2xBaOfXfwPD5MZqk=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "efa589957cd060542a26d2dd7832fd6a6c6c3ade",
+			"revisionTime": "2018-03-10T13:32:14Z"
+		},
+		{
+			"checksumSHA1": "GiVgQkx5acnq+JZtYiuHPlhHoso=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "3fb116b820352b7f0c281308a4d6250c22d94e27",
+			"revisionTime": "2018-08-30T10:17:45Z"
+		},
+		{
+			"checksumSHA1": "qR7D38Zmn9TPUvGn64k+r0+Kq1c=",
+			"path": "github.com/mattn/go-runewidth",
+			"revision": "703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211",
+			"revisionTime": "2018-12-18T00:06:49Z"
+		},
+		{
+			"checksumSHA1": "q0bUck/aTfm7+gHNDUf7PuAqux8=",
+			"path": "github.com/nsf/termbox-go",
+			"revision": "b66b20ab708e289ff1eb3e218478302e6aec28ce",
+			"revisionTime": "2018-08-19T12:58:58Z"
+		},
+		{
+			"checksumSHA1": "iAaX0GtKtIRjvqvIhogId+2Vfo8=",
+			"path": "github.com/olekukonko/tablewriter",
+			"revision": "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970",
+			"revisionTime": "2018-10-26T07:14:10Z"
+		},
+		{
+			"checksumSHA1": "L7dFEYzHkAatKpLgN5g0zvcuPwo=",
+			"path": "github.com/pkg/term/termios",
+			"revision": "bffc007b7fd5a70e20e28f5b7649bb84671ef436",
+			"revisionTime": "2018-07-30T02:16:39Z"
+		},
+		{
+			"checksumSHA1": "BGm8lKZmvJbf/YOJLeL1rw2WVjA=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb",
+			"revisionTime": "2018-10-15T00:23:17Z"
+		},
+		{
+			"checksumSHA1": "c2ONI2rszEE8sTjVvc0egTAZ25U=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "44b849a8bc13eb42e95e6c6c5e360481b73ec710",
+			"revisionTime": "2018-10-23T08:57:12Z"
+		},
+		{
+			"checksumSHA1": "Y7nctMxT58lRM78VtElPerhcnEs=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "44b849a8bc13eb42e95e6c6c5e360481b73ec710",
+			"revisionTime": "2018-10-23T08:57:12Z"
+		},
+		{
+			"checksumSHA1": "LiyXfqOzaeQ8vgYZH3t2hUEdVTw=",
+			"path": "google.golang.org/appengine/cloudsql",
+			"revision": "4216e58b9158e5f1c906f1aca75162a46a2ec88a",
+			"revisionTime": "2018-07-31T16:49:58Z"
+		},
+		{
+			"checksumSHA1": "8yg3QdSXVEmuHm2CgWXEMFN3K6Q=",
+			"path": "gopkg.in/ini.v1",
+			"revision": "6ed8d5f64cd79a498d1f3fab5880cc376ce41bbe",
+			"revisionTime": "2019-01-03T01:53:35Z"
+		}
+	],
+	"rootPath": "github.com/wxnacy/tm"
+}
