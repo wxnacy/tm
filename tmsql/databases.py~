@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# Author: wxnacy(wxnacy@gmail.com)
+# Description:
+
+import timeit
+
+import records
+
+from tmsql.loggers import logger
+
+db = records.Database('mysql+pymysql://root:wxnacy@127.0.0.1:3306/study?charset=utf8mb4')
+
+def db_query(sql):
+    t0 = timeit.default_timer()
+    rows = db.query(sql)
+    t1 = timeit.default_timer()
+    time_used = t1 - t0
+    logger.debug(dir(rows))
+    logger.debug(rows.all())
+    logger.debug(len(rows.all()))
+
+    print(rows.dataset)
+    print(f'{len(rows.all())} rows in set ({time_used:0.2f} sec)')
+    print('')
+
+
+if __name__ == "__main__":
+    rows = db.query('select * from user')
+    print(rows.dataset)
